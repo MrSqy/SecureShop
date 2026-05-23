@@ -1,0 +1,36 @@
+# ─── Secrets (ASLA commit etme) ───────────────────────
+.env
+.env.*
+!.env.example
+.env.local
+.env.production
+.env.staging
+
+# ─── AWS Credentials ──────────────────────────────────
+.aws/
+aws-credentials.json
+*.pem
+*.key
+
+# ─── Dependencies ─────────────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ─── Logs ─────────────────────────────────────────────
+logs/
+*.log
+
+# ─── OS / IDE ─────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# ─── Coverage ─────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── Local Patch Backups / Local Artifacts ────────────
+cookies.txt
+*.bak
+*.patch*.bak

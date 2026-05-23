@@ -1,0 +1,30 @@
+name: Security CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  security-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      # Known csurf/cookie and uuid advisories are documented for a focused future migration.
+      # The current local audit has low/moderate findings, so CI gates only high severity and above.
+      - name: Audit high severity and above
+        run: npm audit --audit-level=high
