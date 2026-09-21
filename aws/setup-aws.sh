@@ -1,18 +1,11 @@
 #!/bin/bash
-# ═══════════════════════════════════════════════════════════════════════════
-# setup-aws.sh — AWS Altyapı Kurulum Scripti
-# Proje 4: Güvenli E-Ticaret Altyapısı (Defense in Depth)
-#
-# KULLANIM:
-#   chmod +x setup-aws.sh
-#   export AWS_REGION=us-east-1
-#   ./setup-aws.sh
-#
-# ÖNKOŞULlar:
-#   - AWS CLI kurulu ve yapılandırılmış (aws configure)
-#   - IAM yetkileri: VPC, EC2, RDS, ELB, WAF Full Access
-# ═══════════════════════════════════════════════════════════════════════════
+# İNCELEME TASLAĞI — çalışan bir dağıtım yolu değildir.
+# aws_deployment_architecture.md dosyasındaki eksikleri okuyun.
+# Koruma: ağ, kaynak oluşturma, paket kurma ve servis değişikliğinden önce durur.
+printf '%s\n' 'Bu AWS taslağı devre dışıdır; canlı dağıtım ayrı tasarım ve doğrulama gerektirir.' >&2
+exit 1
 
+# Aşağısı yalnız mimari inceleme için korunmuştur.
 set -euo pipefail  # Hata durumunda dur
 
 AWS_REGION="${AWS_REGION:-us-east-1}"
@@ -191,13 +184,13 @@ aws rds create-db-instance \
   --db-name ecommerce_db \
   --db-subnet-group-name "${PROJECT}-db-subnet-group" \
   --vpc-security-group-ids "$SG_RDS" \
-  --multi-az \                       # Availability: Otomatik failover
-  --storage-encrypted \              # Confidentiality: AES-256 at-rest
+  --multi-az \
+  --storage-encrypted \
   --storage-type gp3 \
   --allocated-storage 20 \
-  --backup-retention-period 7 \      # 7 günlük otomatik backup
+  --backup-retention-period 7 \
   --preferred-backup-window "03:00-04:00" \
-  --deletion-protection \            # Kazara silme koruması
+  --deletion-protection \
   --no-publicly-accessible           # İnternete KAPALI (kritik!)
 
 echo "  ✅ RDS oluşturma başladı (5-10 dakika sürer)"
@@ -252,7 +245,7 @@ LAUNCH_TEMPLATE_ID=$(aws ec2 create-launch-template \
     \"ImageId\": \"ami-0c02fb55956c7d316\",
     \"InstanceType\": \"t3.micro\",
     \"SecurityGroupIds\": [\"$SG_APP\"],
-    \"UserData\": \"$(base64 -i aws/userdata.sh)\",
+    \"UserData\": \"$(base64 -w 0 aws/userdata.sh)\",
     \"MetadataOptions\": {
       \"HttpTokens\": \"required\",
       \"HttpPutResponseHopLimit\": 1
@@ -307,11 +300,11 @@ echo "  ✅ CloudTrail aktif — Tüm API çağrıları kayıt altında"
 
 echo ""
 echo "╔═══════════════════════════════════════════════╗"
-echo "║         KURULUM TAMAMLANDI ✅                 ║"
+echo "║         TASLAK ADIMLARIN SONU                 ║"
 echo "╚═══════════════════════════════════════════════╝"
 echo ""
 echo "Sonraki Adımlar:"
 echo "  1. ACM'den SSL sertifikası al ve ALB HTTPS listener'a ekle"
-echo "  2. WAF WebACL oluştur ve ALB'ye bağla (setup-waf.sh)"
+echo "  2. WAF tasarımını ayrıca hazırla (bu repoda uygulaması yok)"
 echo "  3. RDS oluşturulduktan sonra schema.sql'i yükle"
 echo "  4. AWS WAF → Rate limiting aktif et"

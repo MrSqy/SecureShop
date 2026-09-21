@@ -1,22 +1,11 @@
 #!/bin/bash
-# ═══════════════════════════════════════════════════════════════════════════
-# deploy-free-tier.sh — AWS %100 BEDAVA (Free-Tier Uyumlu) Dağıtım Scripti
-# Proje 4: Güvenli E-Ticaret Altyapısı (Maliyet Optimize Edilmiş Mimari)
-#
-# KULLANIM:
-#   chmod +x deploy-free-tier.sh
-#   export DB_ROOT_PASSWORD="GucluSifreniz123!"
-#   ./deploy-free-tier.sh
-#
-# BU SCRIPTİN AVANTAJI:
-#   - ALB (Load Balancer) YOK (Aylık ~16$ tasarruf)
-#   - NAT Gateway YOK (Aylık ~32$ tasarruf)
-#   - WAF YOK (Aylık ~10$ tasarruf)
-#   - RDS Single-AZ (Aylık ~25$ tasarruf - Free Tier Uyumlu)
-#   - Sadece tek bir t3.micro EC2 (Aylık 750 saat ücretsiz limit dahilinde)
-#   - TOPLAM MALİYET: 0$ (Sıfır Fatura!)
-# ═══════════════════════════════════════════════════════════════════════════
+# İNCELEME TASLAĞI — çalışan bir dağıtım yolu değildir.
+# aws_deployment_architecture.md dosyasındaki eksikleri okuyun.
+# Koruma: ağ, kaynak oluşturma, paket kurma ve servis değişikliğinden önce durur.
+printf '%s\n' 'Bu AWS taslağı devre dışıdır; canlı dağıtım ayrı tasarım ve doğrulama gerektirir.' >&2
+exit 1
 
+# Aşağısı yalnız mimari inceleme için korunmuştur.
 set -euo pipefail
 
 AWS_REGION="${AWS_REGION:-us-east-1}"
@@ -24,13 +13,13 @@ PROJECT="ecommerce-free"
 ADMIN_IP=$(curl -s https://api.ipify.org)/32
 
 echo "╔══════════════════════════════════════════════╗"
-echo "║   AWS %100 BEDAVA E-Ticaret Kurulumu         ║"
+echo "║   AWS Dağıtım Taslağı E-Ticaret Kurulumu         ║"
 echo "╚══════════════════════════════════════════════╝"
 echo "Bölge: $AWS_REGION | Admin IP: $ADMIN_IP"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────
-# ADIM 1: VPC ve Alt Ağ (Ücretsiz Yapı)
+# ADIM 1: VPC ve Alt Ağ (Taslak)
 # ─────────────────────────────────────────────────────────────────────────
 echo "📦 [1/5] VPC ve Ağ Yapılandırılıyor..."
 
@@ -50,7 +39,7 @@ SUBNET_A=$(aws ec2 create-subnet \
   --query 'Subnet.SubnetId' --output text)
 aws ec2 create-tags --resources "$SUBNET_A" --tags Key=Name,Value="${PROJECT}-subnet-1a"
 
-# RDS DB Grubu için ikinci bir subnet zorunlu (RDS kuralı) ama ücretsizdir.
+# RDS DB Grubu için ikinci bir subnet zorunlu (RDS kuralı) fiyatlandırma ayrıca değerlendirilir.
 SUBNET_B=$(aws ec2 create-subnet \
   --vpc-id "$VPC_ID" \
   --cidr-block 10.0.2.0/24 \
@@ -123,12 +112,12 @@ aws rds create-db-instance \
   --db-name ecommerce_db \
   --db-subnet-group-name "${PROJECT}-subnet-grp" \
   --vpc-security-group-ids "$SG_RDS" \
-  --no-multi-az \                    # Multi-AZ KAPALI (Ücretsiz katman için kritik!) \
-  --allocated-storage 20 \           # 20 GB SSD (Free Tier dahilinde) \
+  --no-multi-az \
+  --allocated-storage 20 \
   --storage-type gp2 \
   --no-publicly-accessible           # Dışarıdan doğrudan bağlantıyı kapat
 
-echo "  ✅ RDS MySQL (Single-AZ db.t3.micro) başlatıldı. (Ücretsiz Katman limitlerinde)"
+echo "  ✅ RDS MySQL (Single-AZ db.t3.micro) başlatıldı. (canlı doğrulanmadı)"
 
 # ─────────────────────────────────────────────────────────────────────────
 # ADIM 4: Tek EC2 Sunucusu (t3.micro veya t2.micro)
@@ -142,8 +131,8 @@ cat > aws/userdata-free.sh <<EOF
 #!/bin/bash
 set -euo pipefail
 
-# Güncellemeleri al ve Node.js 20 kur
-curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+# Güncellemeleri al ve Node.js 24 kur
+curl -fsSL https://rpm.nodesource.com/setup_24.x | bash -
 yum install -y nodejs git
 
 # İşletim sistemi düzeyinde Port Yönlendirme (80 -> 3000)
@@ -184,7 +173,7 @@ After=network.target
 Type=simple
 User=appuser
 WorkingDirectory=\$APP_DIR
-ExecStart=/usr/bin/node src/app.js
+ExecStart=/usr/bin/node src/server.js
 Restart=always
 PrivateTmp=true
 
@@ -218,21 +207,4 @@ echo "  ✅ EC2 Sunucusu Oluşturuldu: $EC2_INSTANCE_ID"
 echo "  ✅ Geçici Canlı IP Adresi: http://$PUBLIC_IP"
 
 # ─────────────────────────────────────────────────────────────────────────
-# ADIM 5: Tamamlanma Bildirimi
-# ─────────────────────────────────────────────────────────────────────────
-echo ""
-echo "╔═══════════════════════════════════════════════╗"
-echo "║      %100 ÜCRETSİZ DEPLOYMENT HAZIR! 🎉       ║"
-echo "╚═══════════════════════════════════════════════╝"
-echo "Maliyet Dağılımı:"
-echo "  - EC2: t3.micro (Free Tier)          -> 0.00$"
-echo "  - RDS: db.t3.micro (Single-AZ)       -> 0.00$"
-echo "  - Load Balancer: Devre Dışı (iptables)-> 0.00$"
-echo "  - WAF: Devre Dışı                    -> 0.00$"
-echo "  - NAT Gateway: Devre Dışı            -> 0.00$"
-echo "------------------------------------------------"
-echo "  TAHMİNİ AYLIK FATURA:                  0.00$"
-echo ""
-echo "Uygulamanız EC2 ayağa kalktığında şu adresten yayında olacak:"
-echo "👉 http://$PUBLIC_IP"
-echo ""
+# Canlı servis ve maliyet doğrulaması bu taslakta yoktur.

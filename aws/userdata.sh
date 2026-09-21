@@ -1,11 +1,15 @@
 #!/bin/bash
-# userdata.sh — EC2 Launch Template UserData
-# Bu script EC2 başladığında otomatik çalışır
+# İNCELEME TASLAĞI — çalışan bir dağıtım yolu değildir.
+# aws_deployment_architecture.md dosyasındaki eksikleri okuyun.
+# Koruma: ağ, kaynak oluşturma, paket kurma ve servis değişikliğinden önce durur.
+printf '%s\n' 'Bu AWS taslağı devre dışıdır; canlı dağıtım ayrı tasarım ve doğrulama gerektirir.' >&2
+exit 1
 
+# Aşağısı yalnız mimari inceleme için korunmuştur.
 set -euo pipefail
 
-# Node.js 20 LTS kurulum
-curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+# Node.js 24 LTS kurulum
+curl -fsSL https://rpm.nodesource.com/setup_24.x | bash -
 yum install -y nodejs git
 
 # Uygulama dizini
@@ -62,7 +66,7 @@ After=network.target
 Type=simple
 User=appuser
 WorkingDirectory=$APP_DIR
-ExecStart=/usr/bin/node src/app.js
+ExecStart=/usr/bin/node src/server.js
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -80,4 +84,4 @@ systemctl daemon-reload
 systemctl enable ecommerce
 systemctl start ecommerce
 
-echo "✅ E-Commerce app başlatıldı"
+echo "Servis komutları çağrıldı; uygulama sağlığı ayrıca doğrulanmalıdır."
