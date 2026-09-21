@@ -275,7 +275,7 @@ Kullanıcının “Uygulamaya astra olarak geçebilirsin.” talimatıyla bu gö
 
 Son ayrıntılı sonuçlar ve sınırlar: [doğrulama kaydı](docs/DOGRULAMA.md). Kurulum, kaynak işlevleri, veri/olay/hata akışları: [proje rehberi](PROJE_REHBERI.md).
 
-Açık kapsam dışı noktalar: gerçek ödeme/WhatsApp/AWS, GitHub üzerinde CI yürütmesi, paylaşılan üretim durum deposu, gerçek eski DB göçü ve tam ekran okuyucu sertifikasyonu. Yerel MySQL kurucusu dolu DB'yi değiştirmeyi reddeder; eski veriyi taşımış gibi sunulmaz. Jest29 alt ağacındaki inflight/glob için npm deprecation uyarıları sürer; son audit bunları açık güvenlik bulgusu olarak raporlamadı.
+İlk teslimde açık veya kapsam dışı noktalar: gerçek ödeme/WhatsApp/AWS, GitHub üzerinde CI yürütmesi, paylaşılan üretim durum deposu, gerçek eski DB göçü ve tam ekran okuyucu sertifikasyonu. Yerel MySQL kurucusu dolu DB'yi değiştirmeyi reddeder; eski veriyi taşımış gibi sunulmaz. Jest29 alt ağacındaki inflight/glob için npm deprecation uyarıları sürer; son audit bunları açık güvenlik bulgusu olarak raporlamadı.
 
 Tamamlama kaydı: `../PROJE_DURUMLARI.txt` içindeki yalnız SecureShop kaydı İŞLENEN bölümünden TAMAMLANAN bölümüne taşındı. Diğer projelerin durumları korundu.
 
@@ -289,3 +289,5 @@ Anlamlı ayrım: AWS taslaklarının dürüstleştirilmesi ve erken ret korumas�
 Ek bulgu: kaybolan sipariş yanıtından sonra429 veya403 gelmesi istemcide pendingOrder'ı siliyordu. Sonraki deneme yeni UUID ile ikinci sipariş oluşturabilirdi. Reddedilen bir tekrar, önceki isteğin kaydedilmediğini kanıtlamaz. Artık yalnız tanınan400 alan/stok/ürün/tutar retleri düzenlemeyi açar; diğer belirsiz retlerde aynı anahtar ve gövde korunur. CSRF hata metni bekleyen işlemi sayfa yenilemeyle kaybetmeye yönlendirmez.
 
 Gerçek tarayıcı kaynağıyla yeni8 regresyonun6'sı eski kodda başarısızdı; düzeltmeyle8'i de geçti. Testlerin küçük DOM/fetch taklitleri kullandığı, gerçek tarayıcı ve SQL kanıtlarının ayrı olduğu rehberde açıklandı. Son sonuçlar docs/DOGRULAMA.md dosyasındadır.
+
+İlk üç commit normal push ile origin/main'e gönderildi.65a910a için gerçek GitHub Actions unit/mysql işleri geçti. Ardından CI'nın Node20 action motoru uyarısını gidermek için resmi Node24 tabanlı checkout v7.0.1/setup-node v7.0.0 sürümleri ayrı bakım commit'ine alındı. Yeni ürün kapsamı eklenmedi; son workflow sonucu ayrıca doğrulanır.

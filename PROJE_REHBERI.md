@@ -403,7 +403,7 @@ Gerçek servis için HTTP kabulü, telefon ekranına ulaştı kanıtı değildir
 | `scripts/check.js` `filesIn(directory)` | node_modules/coverage/logs/.git/.env hariç proje dosyalarını özyinelemeli bulur. Ana blok bütün JS'ye node --check, shell'e bash -n uygular. |
 | check AWS bloğu | PATH boşken taslakların ağdan önce reddettiğini denetler. RDS fragmanını çıkarır, aws isimli yalnız argüman yazan shell fonksiyonuyla çalıştırır; kritik bayrakların aynı komuta ulaştığını kontrol eder. Buluta ulaşmaz. |
 | check HTML/Markdown/rehber blokları | Inline script/style yokluğu, yerel Markdown bağlantılarının dosya varlığı ve rehber envanterindeki bütün dosya adlarını kontrol eder. Bu kontrol anlatımın doğruluğunu veya bağlantı anchor'larını tek başına kanıtlamaz; içerik ayrıca kaynakla okunarak karşılaştırılır. |
-| `.github/workflows/security-ci.yml` | unit işi: checkout, Node24, npm ci, check, test, audit low eşiği. mysql işi aynı runtime/kurulumla izole Docker MySQL yolunu çalıştırır. Yerel komutların sonucu docs/DOGRULAMA.md dosyasında tutulur; uzak yürütme sonucu ilgili commit'in GitHub Actions kaydından ayrıca kontrol edilir. |
+| `.github/workflows/security-ci.yml` | unit işi: checkout v7.0.1, setup-node v7.0.0 ile Node24, npm ci, check, test, audit low eşiği. Bu iki action'ın kendi çalışma motoru da Node24'tür. mysql işi aynı runtime/kurulumla izole Docker MySQL yolunu çalıştırır. Yerel komutların sonucu docs/DOGRULAMA.md dosyasında tutulur; uzak yürütme sonucu ilgili commit'in GitHub Actions kaydından ayrıca kontrol edilir. |
 
 ### 5.9 Test dosyaları: yardımcılar ve test blokları
 
@@ -522,3 +522,6 @@ Son kabul kaydında temiz kurulum sonrası92 regresyon ve ayrı MySQL yolunda11 
 
 
 Push öncesi ek incelemede, yanıt kaybını izleyen403/429 gibi retlerde sipariş anahtarının yanlışlıkla sıfırlanması düzeltildi. Son yerel paket **100 regresyon +11 gerçek MySQL testi** içerir; dosya envanteri60 dosyadır. Gerçek tarayıcıda502→429→200 zinciri aynı sipariş#1 ve tek stok düşüşüyle tamamlandı. `tests/frontend.test.js` içindeki8 senaryo küçük DOM/fetch taklitleri kullanır; tarayıcı deneyi bunlardan ayrı yapıldı. Güncel kanıt ve sınırlar [doğrulama kaydındadır](docs/DOGRULAMA.md).
+
+
+İlk push sonrasında [65a910a için GitHub Actions](https://github.com/MrSqy/SecureShop/actions/runs/35639448629) üzerinde unit ve mysql işleri başarıyla tamamlandı. Bu gerçek uzak CI kanıtı, önceki yerel doğrulamadan ayrıdır. Runner'ın eski action motoru uyarısı üzerine [checkout v7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1) ve [setup-node v7.0.0](https://github.com/actions/setup-node/releases/tag/v7.0.0) seçildi; resmi action.yml dosyalarında Node24 doğrulandı. Uygulamanın Node24 seçimi ve npm cache ayarları korundu. Sonraki commit'in sonucu ayrıca Actions'ta izlenir.

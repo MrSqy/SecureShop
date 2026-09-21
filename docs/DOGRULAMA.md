@@ -41,7 +41,7 @@ Bu deney gerçek ağda rastgele paket kaybı iddiası değildir; commit sonrası
 
 ## Kanıt sınırları
 
-Gerçek WhatsApp/Meta teslimatı, canlı AWS, GitHub Actions üzerinde çalışmış CI, tam erişilebilirlik taraması/ekran okuyucu cihazı, çok sunucu veya üretim dağıtımı **doğrulanmadı**. HTTP header/proxy testi gerçek TLS sunucusu kurulduğunu kanıtlamaz. Telefon ekranı yerine mobil viewport kullanıldı. MySQL için Docker imajı8.4 ve yukarıda açıklanan gerçek Compose/db:init yolu kullanıldı.
+Gerçek WhatsApp/Meta teslimatı, canlı AWS, tam erişilebilirlik taraması/ekran okuyucu cihazı, çok sunucu veya üretim dağıtımı **doğrulanmadı**. HTTP header/proxy testi gerçek TLS sunucusu kurulduğunu kanıtlamaz. Telefon ekranı yerine mobil viewport kullanıldı. MySQL için Docker imajı8.4 ve yukarıda açıklanan gerçek Compose/db:init yolu kullanıldı.
 
 AWS shell doğrulaması yalnız sözdizimi, erken ret ve dış servis yerine argüman yazan taklitle sınırlıdır. Scriptler kendi başına canlı kaynak oluşturmaz; ilk adımda durur. Oturum/OTP/kilit/rate-limit bellekte, mock veri süreç ömrüyle sınırlıdır. Sayfa yenilenirse sepet ve istemcinin belirsiz sipariş anahtarı kaybolur; kayıtlı sipariş geçmişi kontrol edilmelidir.
 
@@ -57,3 +57,10 @@ Mevcut92 regresyon37,078 saniyede, gerçek MySQL11 testi2,264 saniyede yeniden g
 Gerçek tarayıcı kabulü ayrıca development + DB_MOCK=true ile yapıldı.3219'daki yerel ara sunucu ilk başarılı siparişin yanıtını502 yaptı; ikinci denemeyi uygulamaya iletmeden429 döndürdü; üçüncüyü normal iletti. Üç POST aynı UUID'yi kullandı. İlk iki yanıtta adres/adet/Temizle kilitli kaldı, üçüncü yanıt HTTP200 ile **sipariş#1,49,99USD** döndürdü. Katalogda stok160→159, sipariş geçmişinde **tek kayıt** görüldü. Bu ek denemenin verisi süreç belleğindeydi; gerçek MySQL kanıtı yukarıdaki ayrı11 test ve önceki Compose deneyidir. Geçici sekme ve iki test süreci çalışma sonunda kapatıldı.
 
 Uzak CI sonucu yerel test sonucundan ayrıdır. Bu kayıt push öncesi hazırlanmıştır; gönderilen commit'in sonucu [Security CI iş akışından](https://github.com/MrSqy/SecureShop/actions/workflows/security-ci.yml) kontrol edilir.
+
+
+## İlk uzak CI ve action bakımı
+
+[65a910a commit'inin Security CI çalışması](https://github.com/MrSqy/SecureShop/actions/runs/35639448629) gerçekten GitHub üzerinde başarılı oldu: unit işi 1 dakika 21 saniye, mysql işi 39 saniye. Temiz kurulum, check, npm test, audit ve ayrı MySQL komutları geçti. Bu sonuç artık yerel testten çıkarılmış bir varsayım değildir.
+
+Bu çalışmada checkout@v4 ve setup-node@v4 için Node20 motoru uyarısı görüldü. Resmi yayın notları ve action.yml dosyaları kontrol edilerek checkout **v7.0.1**, setup-node **v7.0.0** seçildi; ikisi Node24 kullanır. Workflow'un push/pull_request olayları, Node24 uygulama sürümü, npm cache ve test komutları değişmedi. Bu son bakım commit'inin uzak sonucu ayrıca kontrol edilir. GitHub'ın ubuntu-latest için gelecekteki Ubuntu26 geçiş duyurusu ürün testi hatası değildir; runner değiştiğinde davranış yeniden değerlendirilmelidir.
