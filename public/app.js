@@ -8,7 +8,7 @@ const errors = {
   INVALID_CREDENTIALS: 'Kullanıcı adı veya şifre yanlış.', OTP_INVALID: 'Kod geçersiz veya süresi dolmuş. Yeniden giriş yapabilirsin.',
   OTP_DELIVERY_FAILED: 'Kod gönderilemedi. Biraz sonra yeniden giriş yap.', OTP_LOCKED: 'Çok fazla hatalı kod denemesi.', LOGIN_LOCKED: 'Çok fazla hatalı giriş denemesi.',
   OTP_COOLDOWN: 'Yeni kod için biraz bekle.', OTP_SEND_LIMIT: 'Kod gönderme sınırına ulaştın.', ACCOUNT_EXISTS: 'Bu kullanıcı adı veya telefonla kayıt oluşturulamadı.',
-  AUTH_REQUIRED: 'Oturumun sona ermiş. Lütfen yeniden giriş yap.', CSRF_INVALID: 'Oturum doğrulanamadı. Sayfayı yenileyip tekrar dene.',
+  AUTH_REQUIRED: 'Oturumun sona ermiş. Lütfen yeniden giriş yap.', CSRF_INVALID: 'Oturum doğrulanamadı. Biraz sonra tekrar dene.',
   FORBIDDEN: 'Bu işlem için yetkin yok.', ORIGIN_REJECTED: 'Bu adresten yapılan istek kabul edilmedi.',
   PRODUCT_NOT_FOUND: 'Ürün artık bulunamıyor.', ORDER_NOT_FOUND: 'Sipariş bulunamadı.', INSUFFICIENT_STOCK: 'Yeterli stok yok. Sepet güncellendi; adetleri kontrol et.', STOCK_CHANGED: 'Stok değişti. Adetleri kontrol edip tekrar dene.',
   TOTAL_LIMIT: 'Sipariş tutarı sınırı aşıldı.', IDEMPOTENCY_CONFLICT: 'Bu deneme başka bir siparişle eşleşiyor. Siparişlerini kontrol et.',
@@ -192,11 +192,12 @@ async function checkout() {
     message('checkoutMsg', 'Sipariş #' + result.orderId + ' kaydedildi. Toplam: ' + money(result.totalAmount) + '. Ödeme alınmadı.');
     await loadProducts();
   } catch (error) {
-    // A lost response or server error may follow a commit: retain both body and key.
-    if (error.status && error.status < 500) pendingOrder = null;
+    // A 403/429 on a retry cannot tell us whether the earlier request committed.
+    // Only recognized checkout rejections allow edits and a new request identity.
+    if (error.status === 400 && ['VALIDATION_FAILED', 'INSUFFICIENT_STOCK', 'STOCK_CHANGED', 'PRODUCT_NOT_FOUND', 'TOTAL_LIMIT'].includes(error.code)) pendingOrder = null;
     formError('checkoutForm', 'checkoutMsg', error);
     if (pendingOrder) message('checkoutMsg', errorText(error) + ' Sonuç kesinleşmedi. Aynı siparişi tekrar dene; ikinci kayıt oluşturulmaz. Sayfayı yenilemeden bu denemeyi tamamla.', true);
-    if (['INSUFFICIENT_STOCK', 'STOCK_CHANGED', 'PRODUCT_NOT_FOUND'].includes(error.code)) {
+    if (!pendingOrder && ['INSUFFICIENT_STOCK', 'STOCK_CHANGED', 'PRODUCT_NOT_FOUND'].includes(error.code)) {
       try { await refreshCartStock(); } catch { message('checkoutMsg', 'Stok bilgisi yenilenemedi. Biraz sonra tekrar dene.', true); }
     }
   } finally { checkoutBusy = false; renderCart(); byId('checkoutForm').removeAttribute('aria-busy'); }

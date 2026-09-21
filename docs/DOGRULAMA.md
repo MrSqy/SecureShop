@@ -1,12 +1,12 @@
 # SecureShop doğrulama kaydı
 
-21 Eylül 2026. Node v24.14.1, npm11.11.0; Linux. Son uygulama kaynakları üzerinde yapılan kontroller aşağıdadır. Başlangıç commit'i `6df3c58430b2c216e3ecf5fdf6b3c9fb83fa0e6e`; commit/push yapılmadı. Eski 56 testlik inceleme bulguları uygulama planında tarihli kayıt olarak korunur.
+21 Eylül 2026. Node v24.14.1, npm11.11.0; Linux. Son uygulama kaynakları üzerinde yapılan kontroller aşağıdadır. Başlangıç commit'i `6df3c58430b2c216e3ecf5fdf6b3c9fb83fa0e6e`. İlk uygulama tesliminde commit/push yapılmamıştı; sonraki kullanıcı talimatıyla commit ve push kapsamı eklendi. Eski 56 testlik inceleme bulguları uygulama planında tarihli kayıt olarak korunur.
 
 ## Otomatik kontroller
 
 - Önceki 56 test, bilinçli API değişiklikleriyle (OTP süre metadatası, yeniden gönderim beklemesi, sipariş UUID başlığı) korundu. Yeni davranışları doğrulayan ek testler eklendi.
-- Temiz `npm ci --ignore-scripts --no-audit --no-fund` kurulumu geçti (435 paket). Son `npm test -- --silent`: **8 test dosyasında92/92 geçti**,38,102 saniye. HTTP yaşam döngüsü, gerçek dosya logu, timeout, üretim çerezi ve rollback arızasında SQL bağlantısını atma dahil.
-- `npm run check`: **59 proje dosyası** için JS/shell sözdizimi, yerel Markdown bağlantıları, rehber dosya envanteri, CSP inline yokluğu ve güvenli AWS fragmanları geçti. Kaynakların adlandırılmış fonksiyon/metotları ayrıca AST üzerinden rehber metniyle karşılaştırıldı; adı eksik kalan bulunmadı. Kod alıntısı kaynakla eşleştirildi.
+- Temiz `npm ci --ignore-scripts --no-audit --no-fund` kurulumu geçti (435 paket). Son push öncesi `npm test -- --silent`: **9 test dosyasında100/100 geçti**,37,231 saniye. İlk uygulama teslimindeki92 testin üzerine8 istemci regresyonu eklendi. HTTP yaşam döngüsü, gerçek dosya logu, timeout, üretim çerezi ve rollback arızasında SQL bağlantısını atma dahil.
+- `npm run check`: **60 proje dosyası** için JS/shell sözdizimi, yerel Markdown bağlantıları, rehber dosya envanteri, CSP inline yokluğu ve güvenli AWS fragmanları geçti. Kaynakların adlandırılmış fonksiyon/metotları ayrıca AST üzerinden rehber metniyle karşılaştırıldı; adı eksik kalan bulunmadı. Kod alıntısı kaynakla eşleştirildi.
 - `git diff --check` geçti.
 - Gerçek MySQL8.4: `npm run test:mysql`, **11/11 geçti**. Testler ayrı, benzersiz isimli Docker konteynerinde ve geçici DB depolamasında çalıştı; konteyner sonunda kaldırıldı. Mock adapter aynı altı veri sözleşmesini ayrıca çalıştırır.
 - MySQL kapsamı: kullanıcı/telefon tekilliği; literal arama/ürün ekleme/sayfalama; DB kısıtları; rollback; newest-first ve özel alanların ayıklanması; dolu DB kurulumunun veri değiştirmeden reddi; aynı anahtarlı üç eşzamanlı HTTP isteğinde tek sipariş; iki kullanıcı/sonstok yarışında201+400; geç SQL hatasında geri alma ve aynı anahtarla yeniden başarı.
@@ -45,4 +45,15 @@ Gerçek WhatsApp/Meta teslimatı, canlı AWS, GitHub Actions üzerinde çalışm
 
 AWS shell doğrulaması yalnız sözdizimi, erken ret ve dış servis yerine argüman yazan taklitle sınırlıdır. Scriptler kendi başına canlı kaynak oluşturmaz; ilk adımda durur. Oturum/OTP/kilit/rate-limit bellekte, mock veri süreç ömrüyle sınırlıdır. Sayfa yenilenirse sepet ve istemcinin belirsiz sipariş anahtarı kaybolur; kayıtlı sipariş geçmişi kontrol edilmelidir.
 
-Son durum: bütün kabul kontrolleri tamamlandı. İnceleme ve uygulama test sunucuları, hata ara sunucusu ve tarayıcı sekmesi kapatıldı; geçici viewport ayarı sıfırlandı. Normal kullanıcı Compose projesi, mevcut verileri ve başka repolar değiştirilmedi.
+İlk uygulama tesliminde bütün kabul kontrolleri tamamlandı. İnceleme ve uygulama test sunucuları, hata ara sunucusu ve tarayıcı sekmesi kapatıldı; geçici viewport ayarı sıfırlandı. Normal kullanıcı Compose projesi, mevcut verileri ve başka repolar değiştirilmedi.
+
+
+## Push öncesi ek kontrol
+
+Mevcut92 regresyon37,078 saniyede, gerçek MySQL11 testi2,264 saniyede yeniden geçti; audit yine0 bulgu verdi. Ardından istemci sipariş tekrarında yeni bir hata düzeltildi. Yerel commitler AWS taslakları; bütünleşik uygulama/rehber; ek tekrar düzeltmesi olarak ayrıldı. Uzak geçmiş yeniden yazılmadı.
+
+`tests/frontend.test.js`, yayımlanan public/app.js kaynağını Node vm içinde küçük DOM/fetch taklitleriyle çalıştırır. Yanıt kaybını izleyen429/403/409/404/tanınmayan400; CSRF yenileme zinciri; kesin validasyon reddi; stok yenileme olmak üzere8 senaryo vardır. Eski kodda6 başarısız/2 başarılı, düzeltmede8 başarılı; son tam çalışmada100/100 geçti. Bu test gerçek tarayıcı motoru veya SQL testi diye sunulmaz.
+
+Gerçek tarayıcı kabulü ayrıca development + DB_MOCK=true ile yapıldı.3219'daki yerel ara sunucu ilk başarılı siparişin yanıtını502 yaptı; ikinci denemeyi uygulamaya iletmeden429 döndürdü; üçüncüyü normal iletti. Üç POST aynı UUID'yi kullandı. İlk iki yanıtta adres/adet/Temizle kilitli kaldı, üçüncü yanıt HTTP200 ile **sipariş#1,49,99USD** döndürdü. Katalogda stok160→159, sipariş geçmişinde **tek kayıt** görüldü. Bu ek denemenin verisi süreç belleğindeydi; gerçek MySQL kanıtı yukarıdaki ayrı11 test ve önceki Compose deneyidir. Geçici sekme ve iki test süreci çalışma sonunda kapatıldı.
+
+Uzak CI sonucu yerel test sonucundan ayrıdır. Bu kayıt push öncesi hazırlanmıştır; gönderilen commit'in sonucu [Security CI iş akışından](https://github.com/MrSqy/SecureShop/actions/workflows/security-ci.yml) kontrol edilir.

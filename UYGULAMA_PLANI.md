@@ -225,7 +225,7 @@ Bu seçeneklerin ayrı kalması kabul edilmiş düzeltmeleri yeniden onaya açma
 - Durum: **kabul edilmiş kapsam Astra ile uygulandı**. Güncel doğrulamalar bölüm 8 ve `docs/DOGRULAMA.md` içindedir.
 - Uygulama aşamasında repo, dal/commit, yerel `AGENTS.md` ve bu plan tekrar doğrulanır; aynı kapsam için yeniden genel onay istenmez.
 - Yeni görev/model ayarı değiştirme işlemi bu onaydan çıkarılmaz. Mevcut kullanıcı iş paylaşımı izlenir.
-- Commit/push ve canlı dağıtım bu kapsam onayına dahil değildir.
+- Bu ilk kapsam onayı commit/push veya canlı dağıtımı içermiyordu. Daha sonraki commit/push talimatı bölüm9'da kayıtlıdır; canlı dağıtım kapsam dışında kalır.
 
 ## 6. Kabul edilen kapsamın uygulama sırası ve önerilen commit ayrımı
 
@@ -278,3 +278,14 @@ Son ayrıntılı sonuçlar ve sınırlar: [doğrulama kaydı](docs/DOGRULAMA.md)
 Açık kapsam dışı noktalar: gerçek ödeme/WhatsApp/AWS, GitHub üzerinde CI yürütmesi, paylaşılan üretim durum deposu, gerçek eski DB göçü ve tam ekran okuyucu sertifikasyonu. Yerel MySQL kurucusu dolu DB'yi değiştirmeyi reddeder; eski veriyi taşımış gibi sunulmaz. Jest29 alt ağacındaki inflight/glob için npm deprecation uyarıları sürer; son audit bunları açık güvenlik bulgusu olarak raporlamadı.
 
 Tamamlama kaydı: `../PROJE_DURUMLARI.txt` içindeki yalnız SecureShop kaydı İŞLENEN bölümünden TAMAMLANAN bölümüne taşındı. Diğer projelerin durumları korundu.
+
+
+## 9. Commit düzenleme ve push kapsamı — 21 Eylül 2026
+
+Kullanıcının “Yerel commitleri düzenle, başka geliştirmeler varsa uygula, sonra pushla.” talimatı commit ve uzak depoya gönderme yetkisini ekledi. Başlangıçta HEAD ve origin/main aynı6df3c58 commit'indeydi; düzenlenecek önceki yerel commit yoktu, kabul edilmiş uygulama dosyaları henüz commitlenmemişti. Uzak geçmiş yeniden yazılmadan normal commit ve fast-forward push yolu seçildi.
+
+Anlamlı ayrım: AWS taslaklarının dürüstleştirilmesi ve erken ret koruması; birbirine bağlı uygulama/API/şema/arayüz ve rehber paketi; son incelemede bulunan sipariş tekrar düzeltmesi ve regresyonu. Paket, CSRF ve API değişimleri eski arayüzle uyumlu olmadığı için çekirdek uygulama aynı commit'te tutuldu.
+
+Ek bulgu: kaybolan sipariş yanıtından sonra429 veya403 gelmesi istemcide pendingOrder'ı siliyordu. Sonraki deneme yeni UUID ile ikinci sipariş oluşturabilirdi. Reddedilen bir tekrar, önceki isteğin kaydedilmediğini kanıtlamaz. Artık yalnız tanınan400 alan/stok/ürün/tutar retleri düzenlemeyi açar; diğer belirsiz retlerde aynı anahtar ve gövde korunur. CSRF hata metni bekleyen işlemi sayfa yenilemeyle kaybetmeye yönlendirmez.
+
+Gerçek tarayıcı kaynağıyla yeni8 regresyonun6'sı eski kodda başarısızdı; düzeltmeyle8'i de geçti. Testlerin küçük DOM/fetch taklitleri kullandığı, gerçek tarayıcı ve SQL kanıtlarının ayrı olduğu rehberde açıklandı. Son sonuçlar docs/DOGRULAMA.md dosyasındadır.

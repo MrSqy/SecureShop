@@ -54,6 +54,7 @@ src/utils/money.js
 tests/checkout.test.js
 tests/data-contract.js
 tests/data-contract.test.js
+tests/frontend.test.js
 tests/hardening.test.js
 tests/lifecycle.test.js
 tests/logging.test.js
