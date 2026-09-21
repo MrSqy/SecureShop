@@ -1,41 +1,65 @@
-.
-├── aws
-│   ├── deploy-free-tier.sh
-│   ├── schema.sql
-│   ├── setup-aws.sh
-│   └── userdata.sh
-├── aws_deployment_architecture.md
-├── docs
-│   ├── FINAL_LOCAL_VALIDATION.md
-│   ├── GIT_TRANSFER_PREP.md
-│   └── PROJECT_TREE.md
-├── package.json
-├── package-lock.json
-├── public
-│   └── index.html
-├── README.md
-├── src
-│   ├── app.js
-│   ├── config
-│   │   └── session.js
-│   ├── middleware
-│   │   ├── errorHandler.js
-│   │   ├── rateLimiter.js
-│   │   └── validation.js
-│   ├── models
-│   │   └── db.js
-│   ├── routes
-│   │   ├── auth.js
-│   │   ├── checkout.js
-│   │   └── products.js
-│   ├── services
-│   │   ├── authLockout.js
-│   │   └── whatsappNotifier.js
-│   └── utils
-│       └── logger.js
-└── tests
-    ├── checkout.test.js
-    ├── security.test.js
-    └── whatsappNotifier.test.js
+# Güncel dosya ağacı
 
-12 directories, 27 files
+21 Eylül 2026. Roller ve tüm fonksiyonlar [proje rehberinde](../PROJE_REHBERI.md). Üretilen bağımlılık/log/kapsam çıktıları dahil edilmedi.
+
+```text
+.env.example
+.github/workflows/security-ci.yml
+.gitignore
+.nvmrc
+AGENTS.md
+PROJE_REHBERI.md
+README.md
+UYGULAMA_PLANI.md
+aws/deploy-free-tier.sh
+aws/schema.sql
+aws/setup-aws.sh
+aws/userdata.sh
+aws_deployment_architecture.md
+compose.yaml
+docs/DOGRULAMA.md
+docs/FINAL_LOCAL_VALIDATION.md
+docs/GIT_TRANSFER_PREP.md
+docs/PROJECT_TREE.md
+package-lock.json
+package.json
+public/app.js
+public/index.html
+public/styles.css
+scripts/check.js
+scripts/db-init.js
+scripts/test-mysql.js
+src/app.js
+src/config/runtime.js
+src/config/session.js
+src/middleware/errorHandler.js
+src/middleware/rateLimiter.js
+src/middleware/requireAuth.js
+src/middleware/validation.js
+src/models/contracts.js
+src/models/db.js
+src/models/mock.js
+src/models/mysql.js
+src/models/seed.js
+src/routes/auth.js
+src/routes/checkout.js
+src/routes/products.js
+src/server.js
+src/services/authLockout.js
+src/services/otpChallenges.js
+src/services/whatsappNotifier.js
+src/utils/errors.js
+src/utils/logger.js
+src/utils/money.js
+tests/checkout.test.js
+tests/data-contract.js
+tests/data-contract.test.js
+tests/hardening.test.js
+tests/lifecycle.test.js
+tests/logging.test.js
+tests/mysql/integration.test.js
+tests/runtime.test.js
+tests/security.test.js
+tests/setup.js
+tests/whatsappNotifier.test.js
+```

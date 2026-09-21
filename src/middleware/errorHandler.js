@@ -1,70 +1,19 @@
-/**
- * errorHandler.js — Merkezi Hata Yönetimi
- *
- * Güvenlik Amacı:
- * - Stack trace ve iç hata detaylarını kullanıcıya GÖSTERMEZ
- * - OWASP A05:2021 - Security Misconfiguration: verbose error önleme
- * - Tüm hatalar güvenli biçimde loglanır
- */
 const logger = require('../utils/logger');
-
-/**
- * 404 Handler
- */
-const notFoundHandler = (req, res) => {
-  logger.debug('404 Not Found', { path: req.path, method: req.method, ip: req.ip });
-  res.status(404).json({ error: 'Resource not found' });
-};
-
-/**
- * CSRF Hata Handler
- */
-const csrfErrorHandler = (err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    logger.security('CSRF_TOKEN_INVALID', {
-      ip: req.ip,
-      path: req.path,
-      method: req.method,
-      userAgent: req.get('User-Agent'),
-    });
-    return res.status(403).json({
-      error: 'Invalid or missing CSRF token. Request rejected.',
-      code: 'CSRF_INVALID',
-    });
-  }
-  next(err);
-};
-
-/**
- * Global Error Handler
- * Express 4'te 4 parametre olması zorunlu (err, req, res, next)
- */
-const globalErrorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || err.status || 500;
-
-  logger.error('Unhandled application error', {
-    message: err.message,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-    ip: req.ip,
-    userId: req.session?.userId || null,
-  });
-
-  // Production'da iç hata detayları gizlenir
-  const response = {
-    error: statusCode >= 500
-      ? 'An internal server error occurred.'
-      : err.message,
-    code: err.code || 'INTERNAL_ERROR',
-  };
-
-  // Development ortamında stack trace ekle
-  if (process.env.NODE_ENV === 'development' && err.stack) {
-    response.stack = err.stack;
-  }
-
-  res.status(statusCode).json(response);
-};
-
+const { AppError } = require('../utils/errors');
+const notFoundHandler = (req, res) => res.status(404).json({ error: 'Resource not found', code: 'NOT_FOUND' });
+function csrfErrorHandler(error, req, res, next) {
+  if (error.code !== 'EBADCSRFTOKEN') return next(error);
+  res.status(403).json({ error: 'Invalid or missing CSRF token. Request rejected.', code: 'CSRF_INVALID' });
+}
+function globalErrorHandler(error, req, res, next) {
+  if (res.headersSent) return next(error);
+  let status = error instanceof AppError ? error.status : (error.status === 400 || error.status === 413 ? error.status : 500);
+  const unavailable = ['ECONNREFUSED', 'ETIMEDOUT', 'PROTOCOL_CONNECTION_LOST', 'ER_CON_COUNT_ERROR', 'ER_LOCK_DEADLOCK', 'ER_LOCK_WAIT_TIMEOUT'].includes(error.code);
+  if (unavailable) status = 503;
+  logger.error('Request failed', { requestId: req.id, status, code: error instanceof AppError ? error.code : 'INTERNAL_ERROR' });
+  if (error.retryAfter) res.set('Retry-After', String(error.retryAfter));
+  const code = error instanceof AppError ? error.code : (unavailable ? 'SERVICE_UNAVAILABLE' : status === 400 ? 'INVALID_JSON' : status === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL_ERROR');
+  res.status(status).json({ error: error instanceof AppError ? error.message : 'İşlem tamamlanamadı. Lütfen tekrar deneyin.', code, requestId: req.id,
+    ...(error.retryAfter ? { retryAfter: error.retryAfter } : {}), ...(error.details ? { details: error.details } : {}) });
+}
 module.exports = { notFoundHandler, csrfErrorHandler, globalErrorHandler };

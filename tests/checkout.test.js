@@ -26,7 +26,7 @@ const getCsrf = async (agent) => {
 
 const postWithCsrf = async (agent, url, body) => {
   const csrfToken = await getCsrf(agent);
-  return agent.post(url).set('X-CSRF-Token', csrfToken).send(body);
+  return agent.post(url).set('Idempotency-Key', require('node:crypto').randomUUID()).set('X-CSRF-Token', csrfToken).send(body);
 };
 
 const registerAndLogin = async (username, phoneNumber) => {

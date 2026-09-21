@@ -105,9 +105,10 @@ describe('security and OTP auth flow', () => {
     expect((await registerUser(agent, { username: 'otpuser', phoneNumber: '+905553333333', password: 'Strong@123' })).status).toBe(201);
     const response = await startLogin(agent, 'otpuser');
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ otpRequired: true, message: 'Verification code sent.' });
+    expect(response.body).toEqual(expect.objectContaining({ otpRequired: true, message: 'Verification code sent.', expiresAt: expect.any(Number), resendAt: expect.any(Number) }));
     expect(sendOtpCode).toHaveBeenCalledWith('+905553333333', expect.stringMatching(/^\d{6}$/));
-    expect(JSON.stringify(response.body)).not.toMatch(/\d{6}/);
+    expect(response.body).not.toHaveProperty('otpCode');
+    expect(response.body).not.toHaveProperty('code');
   });
 
   test('/api/auth/me after login step 1 still returns 401', async () => {
@@ -269,7 +270,9 @@ describe('progressive brute-force lockout', () => {
     expect((await verifyOtp(agent, 'otpclear', '000000')).status).toBe(401);
     expect((await verifyOtp(agent, 'otpclear', mockSentOtpByPhone.get('+905557000008'))).status).toBe(200);
 
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 31000);
     expect((await startLogin(agent, 'otpclear')).status).toBe(200);
+    clock.mockRestore();
     for (let i = 0; i < 2; i++) {
       expect((await verifyOtp(agent, 'otpclear', '000000')).status).toBe(401);
     }

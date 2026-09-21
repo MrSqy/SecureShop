@@ -1,6 +1,7 @@
 const logger = require('../utils/logger');
+const { integer } = require('../config/runtime');
 
-const DEFAULT_GRAPH_API_VERSION = 'v20.0';
+const DEFAULT_GRAPH_API_VERSION = ''; // Real delivery requires an explicitly reviewed API version.
 const MAX_MESSAGE_LENGTH = 512;
 
 const getConfig = () => ({
@@ -9,6 +10,7 @@ const getConfig = () => ({
   apiVersion: process.env.WHATSAPP_GRAPH_API_VERSION || DEFAULT_GRAPH_API_VERSION,
   accessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
   phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+  timeoutMs: integer(process.env, 'WHATSAPP_TIMEOUT_MS', 5000, 50, 15000),
 });
 
 const isLocalDevelopmentRuntime = () => {
@@ -18,6 +20,7 @@ const isLocalDevelopmentRuntime = () => {
 
 const getMissingConfigKeys = (config) => {
   const missing = [];
+  if (!config.apiVersion) missing.push('WHATSAPP_GRAPH_API_VERSION');
   if (!config.accessToken) missing.push('WHATSAPP_ACCESS_TOKEN');
   if (!config.phoneNumberId) missing.push('WHATSAPP_PHONE_NUMBER_ID');
   return missing;
@@ -52,23 +55,13 @@ const parseMessageId = (responseBody) => {
   return responseBody.messages?.[0]?.id || null;
 };
 
-const safeErrorMessage = (err) => {
-  if (!err) return 'WhatsApp notification failed.';
-  if (typeof err === 'string') return err;
-  return err.message || 'WhatsApp notification failed.';
-};
-
 const postWhatsAppMessage = async ({ to, body, orderId, purpose, otpCode }) => {
   const config = getConfig();
 
   if (config.mockSend) {
-    logger.info('WhatsApp mock send', { to, orderId, purpose });
+    logger.info('WhatsApp mock send', { orderId, purpose });
     if (purpose === 'otp-login' && isLocalDevelopmentRuntime()) {
-      logger.warn('LOCAL MOCK WhatsApp OTP code', {
-        purpose,
-        to,
-        otpCode,
-      });
+      logger.localOtp(to, otpCode);
     }
     return { enabled: true, sent: true, mocked: true, messageId: 'mocked-whatsapp-message' };
   }
@@ -109,20 +102,26 @@ const postWhatsAppMessage = async ({ to, body, orderId, purpose, otpCode }) => {
     },
   };
 
+  const controller = new AbortController();
+  let timeout;
+  const expired = new Promise((resolve, reject) => {
+    timeout = setTimeout(() => { controller.abort(); reject(new Error('timeout')); }, config.timeoutMs);
+  });
   try {
-    const response = await fetch(endpoint, {
+    const response = await Promise.race([fetch(endpoint, {
       method: 'POST',
       headers: {
         Authorization: 'Bearer ' + config.accessToken,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
-    });
+      body: JSON.stringify(payload), signal: controller.signal,
+    }), expired]);
 
     let responseBody = null;
     try {
-      responseBody = await response.json();
+      responseBody = await Promise.race([response.json(), expired]);
     } catch (err) {
+      if (controller.signal.aborted) throw err;
       responseBody = null;
     }
 
@@ -136,11 +135,14 @@ const postWhatsAppMessage = async ({ to, body, orderId, purpose, otpCode }) => {
     }
 
     const messageId = parseMessageId(responseBody);
+    if (!messageId) return { enabled: true, sent: false, error: 'WhatsApp API returned no message identifier.' };
     logger.info('WhatsApp message sent', { orderId, messageId, purpose });
     return { enabled: true, sent: true, messageId };
   } catch (err) {
-    logger.warn('WhatsApp message failed safely', { orderId, purpose, error: safeErrorMessage(err) });
-    return { enabled: true, sent: false, error: safeErrorMessage(err) };
+    logger.warn('WhatsApp message failed safely', { orderId, purpose });
+    return { enabled: true, sent: false, error: 'WhatsApp notification failed.' };
+  } finally {
+    clearTimeout(timeout);
   }
 };
 

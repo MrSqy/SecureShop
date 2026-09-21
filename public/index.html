@@ -4,573 +4,91 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SecureShop</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box}body{margin:0;background:#0a0e1a;color:#f1f5f9;font-family:Inter,Arial,sans-serif}nav{height:64px;padding:0 2rem;background:#111827;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e2d45;position:sticky;top:0;z-index:10}.logo{font-weight:700;color:#93c5fd}.nav-links{display:flex;gap:1rem;align-items:center}.link-btn{background:none;border:0;color:#94a3b8;cursor:pointer;font:inherit}.link-btn:hover{color:#f1f5f9}.hidden{display:none!important}.hero{padding:4rem 2rem 2rem;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(59,130,246,.16),transparent 70%)}.hero h1{font-size:clamp(2rem,5vw,3.4rem);margin:.25rem 0}.hero p{color:#94a3b8}.container{max-width:1180px;margin:auto;padding:2rem;display:grid;grid-template-columns:300px 1fr;gap:2rem}.panel{background:#1a2235;border:1px solid #1e2d45;border-radius:12px;padding:1.25rem;margin-bottom:1rem}.panel h2{font-size:1rem;margin:0 0 1rem}.tabs,.main-tabs{display:flex;gap:.5rem;margin-bottom:1rem}.tab,.main-tab,.btn{border:1px solid #1e2d45;border-radius:8px;background:#111827;color:#cbd5e1;padding:.65rem .85rem;cursor:pointer;font:inherit}.tab.active,.main-tab.active,.btn-primary{background:#2563eb;border-color:#2563eb;color:white}.btn{width:100%;font-weight:600}.btn-danger{background:#dc2626;border-color:#dc2626;color:white}.form-group{margin-bottom:.85rem}.form-group label{display:block;color:#94a3b8;font-size:.8rem;margin-bottom:.35rem}.form-group input{width:100%;background:#111827;border:1px solid #1e2d45;border-radius:8px;color:#f1f5f9;padding:.65rem;font:inherit}.msg{display:none;border-radius:8px;padding:.65rem;font-size:.85rem;margin-top:.75rem}.msg.success{display:block;border:1px solid #10b981;color:#34d399;background:rgba(16,185,129,.1)}.msg.error{display:block;border:1px solid #ef4444;color:#f87171;background:rgba(239,68,68,.1)}.search-bar{display:flex;gap:.5rem;margin-bottom:1rem}.search-bar input{flex:1;background:#1a2235;border:1px solid #1e2d45;border-radius:8px;color:#f1f5f9;padding:.7rem}.search-bar .btn{width:auto}.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}.product-card,.order-item,.cart-item{background:#111827;border:1px solid #1e2d45;border-radius:10px;padding:1rem}.product-img{height:90px;display:flex;align-items:center;justify-content:center;background:#0f172a;border-radius:8px;margin-bottom:.75rem;color:#94a3b8;font-size:2.4rem}.product-name{font-weight:700;margin-bottom:.35rem}.product-price{color:#60a5fa;font-weight:700;margin-bottom:.35rem}.muted{color:#94a3b8}.cart-panel{position:fixed;inset:0 0 0 auto;width:420px;max-width:100%;background:#111827;border-left:1px solid #1e2d45;transform:translateX(100%);transition:.25s;z-index:20;padding:1.25rem;display:flex;flex-direction:column}.cart-panel.open{transform:translateX(0)}.cart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}.cart-items{flex:1;overflow:auto}.cart-item{display:flex;justify-content:space-between;gap:.75rem;margin-bottom:.75rem;align-items:center}.cart-item-visual{width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:#0f172a;border-radius:8px;font-size:1.6rem;flex-shrink:0}.cart-item-body{flex:1;min-width:0}.qty-controls{display:flex;gap:.35rem;align-items:center;margin-top:.5rem}.icon-btn{border:1px solid #1e2d45;background:#1a2235;color:#f1f5f9;border-radius:6px;min-width:28px;height:28px;cursor:pointer}.cart-summary{display:flex;justify-content:space-between;font-weight:700;margin:1rem 0}.toast{position:fixed;right:1rem;bottom:1rem;background:#1a2235;border:1px solid #1e2d45;border-radius:10px;padding:.8rem 1rem;opacity:0;transform:translateY(8px);transition:.2s;max-width:320px}.toast.show{opacity:1;transform:none}.toast.error{border-color:#ef4444;color:#f87171}.toast.success{border-color:#10b981;color:#34d399}.order-item{margin-bottom:.75rem}.order-row{display:flex;justify-content:space-between;align-items:center;gap:.5rem}.order-details{margin-top:.75rem;border-top:1px solid #1e2d45;padding-top:.75rem}.order-detail-row{display:flex;justify-content:space-between;gap:.5rem;padding:.35rem 0;border-bottom:1px solid rgba(30,45,69,.5)}.order-detail-row:last-child{border-bottom:0}@media(max-width:800px){.container{grid-template-columns:1fr;padding:1rem}nav{padding:0 1rem}}
-</style>
+<link href="/styles.css" rel="stylesheet">
+<script src="/app.js" defer></script>
 </head>
 <body>
-<nav>
+<nav aria-label="Hesap ve sepet">
   <div class="logo">SecureShop</div>
   <div class="nav-links">
-    <button class="link-btn" id="cartToggleBtn">Sepetim (<span id="cartCount">0</span>)</button>
+    <button class="link-btn" id="cartToggleBtn" aria-haspopup="dialog">Sepetim (<span id="cartCount">0</span>)</button>
     <span id="authStatus">Giriş yapılmadı</span>
     <button class="link-btn hidden" id="logoutBtn">Çıkış</button>
   </div>
 </nav>
-<section class="hero"><h1>Güvenli E-Ticaret Demo</h1><p>CSRF, XSS hardening, OTP login ve güvenli checkout akışı.</p></section>
+<header class="hero"><h1>SecureShop</h1><p>Ürünleri keşfet, sepetini oluştur ve örnek siparişini tamamla.<br>Bu bir deneme mağazasıdır; ödeme alınmaz ve ürün gönderilmez.</p></header>
 <main class="container">
   <aside>
-    <section class="panel" id="authPanel">
-      <h2>Hesap İşlemleri</h2>
+    <section class="panel" id="authPanel" aria-labelledby="accountHeading">
+      <h2 id="accountHeading">Hesap işlemleri</h2>
       <div class="tabs">
-        <button class="tab active" id="loginTab">Giriş Yap</button>
-        <button class="tab" id="registerTab">Kayıt Ol</button>
+        <button class="tab active" id="loginTab" aria-pressed="true">Giriş yap</button>
+        <button class="tab" id="registerTab" aria-pressed="false">Kayıt ol</button>
       </div>
-      <div id="loginForm">
-        <div class="form-group"><label for="loginUsername">Kullanıcı Adı</label><input id="loginUsername" autocomplete="username"></div>
-        <div class="form-group"><label for="loginPassword">Şifre</label><input id="loginPassword" type="password" autocomplete="current-password"></div>
-        <button class="btn btn-primary" id="loginBtn">Giriş Yap</button>
-        <div class="msg" id="loginMsg"></div>
-      </div>
-      <div id="otpForm" class="hidden">
-        <div class="form-group"><label for="otpCode">6 Haneli Doğrulama Kodu</label><input id="otpCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
-        <button class="btn btn-primary" id="verifyOtpBtn">Doğrula</button>
-        <div class="msg" id="otpMsg"></div>
-      </div>
-      <div id="registerForm" class="hidden">
-        <div class="form-group"><label for="regUsername">Kullanıcı Adı</label><input id="regUsername" autocomplete="username"></div>
-        <div class="form-group"><label for="regPhoneNumber">Telefon Numarası</label><input id="regPhoneNumber" placeholder="+905555555555" autocomplete="tel"></div>
-        <div class="form-group"><label for="regPassword">Şifre</label><input id="regPassword" type="password" autocomplete="new-password"></div>
-        <button class="btn btn-primary" id="registerBtn">Kayıt Ol</button>
-        <div class="msg" id="registerMsg"></div>
-      </div>
+      <form id="loginForm">
+        <fieldset>
+          <div class="form-group"><label for="loginUsername">Kullanıcı adı</label><input id="loginUsername" name="username" autocomplete="username" required maxlength="50"><span class="field-error" id="loginUsernameError"></span></div>
+          <div class="form-group"><label for="loginPassword">Şifre</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required maxlength="128"><span class="field-error" id="loginPasswordError"></span></div>
+          <button class="btn btn-primary" id="loginBtn" type="submit">Giriş yap</button>
+        </fieldset>
+        <div class="msg" id="loginMsg" role="status"></div>
+      </form>
+      <form id="otpForm" class="hidden">
+        <fieldset>
+          <div class="form-group"><label for="otpCode">6 haneli doğrulama kodu</label><input id="otpCode" name="otpCode" inputmode="numeric" pattern="[0-9]{6}" required maxlength="6" autocomplete="one-time-code"><span class="field-error" id="otpCodeError"></span></div>
+          <p id="otpTimer" class="hint"></p>
+          <button class="btn btn-primary" id="verifyOtpBtn" type="submit">Doğrula</button>
+          <div class="actions"><button class="btn" id="resendOtpBtn" type="button">Yeniden gönder</button><button class="btn" id="backLoginBtn" type="button">Girişe dön</button></div>
+        </fieldset>
+        <div class="msg" id="otpMsg" role="status"></div>
+      </form>
+      <form id="registerForm" class="hidden">
+        <fieldset>
+          <div class="form-group"><label for="regUsername">Kullanıcı adı</label><input id="regUsername" name="username" autocomplete="username" required minlength="3" maxlength="50" pattern="[a-zA-Z0-9]+"><span class="field-error" id="regUsernameError"></span></div>
+          <div class="form-group"><label for="regPhoneNumber">Telefon numarası</label><input id="regPhoneNumber" name="phoneNumber" type="tel" placeholder="+905555555555" autocomplete="tel" required maxlength="16"><span class="field-error" id="regPhoneNumberError"></span></div>
+          <div class="form-group"><label for="regPassword">Şifre</label><input id="regPassword" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" aria-describedby="passwordHint"><span class="field-error" id="regPasswordError"></span></div>
+          <p id="passwordHint" class="hint">En az 8 karakter; büyük harf, küçük harf, rakam ve @$!%*?& işaretlerinden biri. En fazla 72 UTF-8 baytı: Türkçe harfler birden fazla bayt olabilir.</p>
+          <button class="btn btn-primary" id="registerBtn" type="submit">Kayıt ol</button>
+        </fieldset>
+        <div class="msg" id="registerMsg" role="status"></div>
+      </form>
     </section>
     <section class="panel hidden" id="userPanel">
-      <h2 id="welcomeUser"></h2>
-      <p class="muted">Oturum aktif</p>
-      <button class="btn btn-danger" id="logoutPanelBtn">Çıkış Yap</button>
+      <h2 id="welcomeUser"></h2><p class="muted">Oturum açık</p>
+      <button class="btn btn-danger" id="logoutPanelBtn">Çıkış yap</button>
     </section>
-    <section class="panel"><h2>Güvenlik</h2><p class="muted">OTP doğrulama tamamlanmadan session oluşturulmaz.</p></section>
+    <section class="panel"><h2>Deneme mağazası</h2><p class="hint">Sepetin bu sayfada tutulur. Sayfayı yenilediğinde veya çıkış yaptığında temizlenir. Siparişlerin, kullandığın veri moduna göre saklanır.</p></section>
   </aside>
-  <section>
+  <section aria-label="Mağaza">
     <div class="main-tabs">
-      <button class="main-tab active" id="productsTab">Ürünler</button>
-      <button class="main-tab" id="ordersTab">Siparişlerim</button>
+      <button class="main-tab active" id="productsTab" aria-pressed="true">Ürünler</button>
+      <button class="main-tab" id="ordersTab" aria-pressed="false">Siparişlerim</button>
     </div>
-    <section id="productsSection">
-      <div class="search-bar"><input id="searchInput" placeholder="Ürün ara"><button class="btn btn-primary" id="searchBtn">Ara</button></div>
+    <section id="productsSection" aria-label="Ürünler">
+      <form class="search-bar" id="searchForm"><label class="sr-only" for="searchInput">Ürün ara</label><input id="searchInput" placeholder="Ürün ara" maxlength="200"><button class="btn btn-primary" id="searchBtn" type="submit">Ara</button></form>
+      <p id="productsMsg" class="status-message" role="status"></p>
       <div id="productsGrid" class="products-grid"></div>
     </section>
-    <section id="ordersSection" class="hidden">
+    <section id="ordersSection" class="hidden" aria-label="Siparişlerim">
       <button class="btn btn-primary" id="refreshOrdersBtn">Yenile</button>
-      <div id="ordersList"></div>
+      <p id="ordersMsg" class="status-message" role="status"></p><div id="ordersList"></div>
     </section>
   </section>
 </main>
-<section class="cart-panel" id="cartPanel">
-  <div class="cart-header"><h2>Sepetim</h2><button class="icon-btn" id="closeCartBtn">x</button></div>
+<dialog class="cart-panel" id="cartPanel" aria-labelledby="cartHeading">
+  <div class="cart-header"><h2 id="cartHeading">Sepetim</h2><button class="icon-btn" id="closeCartBtn" aria-label="Sepeti kapat">×</button></div>
   <div class="cart-items" id="cartItems"></div>
-  <div class="form-group"><label for="shippingStreet">Adres</label><input id="shippingStreet"></div>
-  <div class="form-group"><label for="shippingCity">Şehir</label><input id="shippingCity"></div>
-  <div class="msg" id="checkoutMsg"></div>
-  <div class="cart-summary"><span>Toplam</span><span id="cartTotal">$0.00</span></div>
-  <div style="display:flex;gap:.5rem"><button class="btn btn-danger" id="clearCartBtn">Temizle</button><button class="btn btn-primary" id="checkoutBtn">Siparişi Tamamla</button></div>
-</section>
-<div class="toast" id="toast"></div>
-<script>
-let csrfToken = '';
-let currentUser = null;
-let pendingOtpUsername = '';
-let loadedProductsArray = [];
-let cart = [];
-const byId = (id) => document.getElementById(id);
-
-function setMessage(id, text, type) {
-  const node = byId(id);
-  node.className = 'msg ' + type;
-  node.textContent = text;
-}
-function clearMessage(id) {
-  const node = byId(id);
-  node.className = 'msg';
-  node.textContent = '';
-}
-function showToast(text, type) {
-  const toast = byId('toast');
-  toast.textContent = text;
-  toast.className = 'toast ' + (type || 'success') + ' show';
-  setTimeout(() => { toast.className = 'toast'; }, 2500);
-}
-async function getCsrfToken() {
-  try {
-    const response = await fetch('/api/csrf-token', { credentials: 'include' });
-    const data = await response.json();
-    csrfToken = data.csrfToken || '';
-  } catch (err) {
-    csrfToken = '';
-  }
-}
-function switchTab(tab) {
-  byId('loginForm').classList.toggle('hidden', tab !== 'login');
-  byId('otpForm').classList.add('hidden');
-  byId('registerForm').classList.toggle('hidden', tab !== 'register');
-  byId('loginTab').classList.toggle('active', tab === 'login');
-  byId('registerTab').classList.toggle('active', tab === 'register');
-}
-function showSection(section) {
-  byId('productsSection').classList.toggle('hidden', section !== 'products');
-  byId('ordersSection').classList.toggle('hidden', section !== 'orders');
-  byId('productsTab').classList.toggle('active', section === 'products');
-  byId('ordersTab').classList.toggle('active', section === 'orders');
-  if (section === 'orders') loadOrders();
-}
-function formatRetryAfterMessage(prefix, retryAfter) {
-  const seconds = Math.max(1, Math.floor(Number(retryAfter) || 0));
-  if (seconds >= 60) {
-    const minutes = Math.ceil(seconds / 60);
-    return prefix + ' Lütfen ' + minutes + ' dakika sonra tekrar deneyin.';
-  }
-  return prefix + ' Lütfen ' + seconds + ' saniye sonra tekrar deneyin.';
-}
-async function login() {
-  clearMessage('loginMsg');
-  const username = byId('loginUsername').value.trim();
-  const password = byId('loginPassword').value;
-  try {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      if (response.status === 429 && data.retryAfter) {
-        return setMessage('loginMsg', formatRetryAfterMessage('Çok fazla hatalı giriş denemesi.', data.retryAfter), 'error');
-      }
-      return setMessage('loginMsg', data.error || 'Giriş başarısız.', 'error');
-    }
-    if (data.otpRequired) {
-      pendingOtpUsername = username;
-      byId('loginForm').classList.add('hidden');
-      byId('otpForm').classList.remove('hidden');
-      setMessage('otpMsg', data.message || 'Verification code sent.', 'success');
-      return;
-    }
-  } catch (err) { showToast('Bağlantı hatası.', 'error'); }
-}
-async function verifyOtp() {
-  clearMessage('otpMsg');
-  try {
-    const response = await fetch('/api/auth/verify-otp', {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      body: JSON.stringify({ username: pendingOtpUsername, otpCode: byId('otpCode').value.trim() })
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      if (response.status === 429 && data.retryAfter) {
-        return setMessage('otpMsg', formatRetryAfterMessage('Çok fazla hatalı doğrulama kodu denemesi.', data.retryAfter), 'error');
-      }
-      return setMessage('otpMsg', data.error || 'Doğrulama başarısız.', 'error');
-    }
-    currentUser = data.user;
-    pendingOtpUsername = '';
-    byId('otpCode').value = '';
-    updateAuthUI(true);
-    showToast('Giriş başarılı.');
-    await getCsrfToken();
-  } catch (err) { showToast('Bağlantı hatası.', 'error'); }
-}
-async function register() {
-  clearMessage('registerMsg');
-  const username = byId('regUsername').value.trim();
-  const phoneNumber = byId('regPhoneNumber').value.trim();
-  const password = byId('regPassword').value;
-  try {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      body: JSON.stringify({ username, phoneNumber, password })
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      const text = data.details ? data.details.map(item => item.message).join(', ') : (data.error || 'Kayıt başarısız.');
-      return setMessage('registerMsg', text, 'error');
-    }
-    setMessage('registerMsg', 'Kayıt başarılı. Şimdi giriş yapabilirsiniz.', 'success');
-    switchTab('login');
-  } catch (err) { showToast('Bağlantı hatası.', 'error'); }
-}
-function resetClientState() {
-  currentUser = null;
-  pendingOtpUsername = '';
-  cart = [];
-  loadedProductsArray = [];
-  const otpInput = byId('otpCode');
-  if (otpInput) otpInput.value = '';
-  byId('cartPanel').classList.remove('open');
-  byId('otpForm').classList.add('hidden');
-  clearMessage('loginMsg');
-  clearMessage('otpMsg');
-  clearMessage('registerMsg');
-  clearMessage('checkoutMsg');
-  switchTab('login');
-  showSection('products');
-  byId('ordersList').replaceChildren();
-  updateCartUI();
-  updateAuthUI(false);
-}
-async function logout() {
-  try {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': csrfToken } });
-  } catch (err) { /* ignore — reload below ensures clean state */ }
-  resetClientState();
-  window.location.reload();
-}
-function updateAuthUI(loggedIn) {
-  byId('authPanel').classList.toggle('hidden', loggedIn);
-  byId('userPanel').classList.toggle('hidden', !loggedIn);
-  byId('logoutBtn').classList.toggle('hidden', !loggedIn);
-  byId('authStatus').textContent = loggedIn && currentUser ? currentUser.username : 'Giriş yapılmadı';
-  byId('welcomeUser').textContent = loggedIn && currentUser ? currentUser.username : '';
-}
-function renderProducts(products) {
-  const grid = byId('productsGrid');
-  grid.replaceChildren();
-  if (!products.length) {
-    const empty = document.createElement('p');
-    empty.className = 'muted';
-    empty.textContent = 'Ürün bulunamadı.';
-    grid.appendChild(empty);
-    return;
-  }
-  for (const product of products) {
-    const card = document.createElement('article');
-    card.className = 'product-card';
-    const img = document.createElement('div');
-    img.className = 'product-img';
-    img.textContent = product.image_url || 'Ürün';
-    const name = document.createElement('div');
-    name.className = 'product-name';
-    name.textContent = product.name;
-    const price = document.createElement('div');
-    price.className = 'product-price';
-    price.textContent = '$' + Number(product.price).toFixed(2);
-    const stock = document.createElement('div');
-    stock.className = 'muted';
-    stock.textContent = product.stock > 0 ? 'Stok: ' + product.stock : 'Stokta yok';
-    const button = document.createElement('button');
-    button.className = 'btn btn-primary';
-    button.textContent = 'Sepete Ekle';
-    button.disabled = product.stock <= 0;
-    button.addEventListener('click', () => addToCart(product.id));
-    card.append(img, name, price, stock, button);
-    grid.appendChild(card);
-  }
-}
-async function loadProducts(query) {
-  const grid = byId('productsGrid');
-  grid.replaceChildren();
-  const loading = document.createElement('p');
-  loading.className = 'muted';
-  loading.textContent = 'Yükleniyor...';
-  grid.appendChild(loading);
-  try {
-    const url = query ? '/api/products?q=' + encodeURIComponent(query) : '/api/products';
-    const response = await fetch(url, { credentials: 'include' });
-    const data = await response.json();
-    loadedProductsArray = data.products || [];
-    renderProducts(loadedProductsArray);
-  } catch (err) {
-    grid.replaceChildren();
-    const error = document.createElement('p');
-    error.className = 'muted';
-    error.textContent = 'Ürünler yüklenemedi.';
-    grid.appendChild(error);
-  }
-}
-function addToCart(id) {
-  if (!currentUser) return showToast('Sepete eklemek için giriş yapın.', 'error');
-  const product = loadedProductsArray.find(item => item.id === id);
-  if (!product) return;
-  const existing = cart.find(item => item.id === id);
-  if (existing) existing.quantity += 1;
-  else cart.push({ id: product.id, name: product.name, price: Number(product.price), quantity: 1, image_url: product.image_url || '' });
-  updateCartUI();
-}
-function updateCartUI() {
-  const list = byId('cartItems');
-  list.replaceChildren();
-  let total = 0;
-  let count = 0;
-  for (const item of cart) {
-    total += item.price * item.quantity;
-    count += item.quantity;
-    const row = document.createElement('div');
-    row.className = 'cart-item';
-    const visual = document.createElement('div');
-    visual.className = 'cart-item-visual';
-    visual.textContent = item.image_url || '📦';
-    const info = document.createElement('div');
-    info.className = 'cart-item-body';
-    const title = document.createElement('strong');
-    title.textContent = item.name;
-    const price = document.createElement('div');
-    price.className = 'muted';
-    price.textContent = '$' + item.price.toFixed(2);
-    const controls = document.createElement('div');
-    controls.className = 'qty-controls';
-    const minus = document.createElement('button');
-    minus.className = 'icon-btn';
-    minus.textContent = '-';
-    minus.addEventListener('click', () => changeQty(item.id, -1));
-    const qty = document.createElement('span');
-    qty.textContent = String(item.quantity);
-    const plus = document.createElement('button');
-    plus.className = 'icon-btn';
-    plus.textContent = '+';
-    plus.addEventListener('click', () => changeQty(item.id, 1));
-    controls.append(minus, qty, plus);
-    info.append(title, price, controls);
-    const remove = document.createElement('button');
-    remove.className = 'icon-btn';
-    remove.textContent = 'x';
-    remove.addEventListener('click', () => removeFromCart(item.id));
-    row.append(visual, info, remove);
-    list.appendChild(row);
-  }
-  if (!cart.length) {
-    const empty = document.createElement('p');
-    empty.className = 'muted';
-    empty.textContent = 'Sepetiniz boş.';
-    list.appendChild(empty);
-  }
-  byId('cartCount').textContent = String(count);
-  byId('cartTotal').textContent = '$' + total.toFixed(2);
-}
-function changeQty(id, delta) {
-  const item = cart.find(entry => entry.id === id);
-  if (!item) return;
-  item.quantity += delta;
-  if (item.quantity <= 0) removeFromCart(id);
-  else updateCartUI();
-}
-function removeFromCart(id) { cart = cart.filter(item => item.id !== id); updateCartUI(); }
-function clearCart() { cart = []; updateCartUI(); }
-async function checkout() {
-  clearMessage('checkoutMsg');
-  if (!currentUser) return showToast('Ödeme yapmak için giriş yapın.', 'error');
-  if (!cart.length) return showToast('Sepetiniz boş.', 'error');
-  const street = byId('shippingStreet').value.trim();
-  const city = byId('shippingCity').value.trim();
-  try {
-    const response = await fetch('/api/checkout', {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      body: JSON.stringify({ items: cart.map(item => ({ productId: item.id, quantity: item.quantity })), shippingAddress: { street, city } })
-    });
-    const data = await response.json();
-    if (!response.ok) return setMessage('checkoutMsg', data.error || 'Sipariş oluşturulamadı.', 'error');
-    showToast('Sipariş oluşturuldu.');
-    clearCart();
-    await loadProducts();
-    await loadOrders();
-  } catch (err) { showToast('Bağlantı hatası.', 'error'); }
-}
-function renderOrderDetails(container, detail) {
-  container.replaceChildren();
-  const statusRow = document.createElement('div');
-  statusRow.className = 'order-detail-row';
-  const statusLabel = document.createElement('span');
-  statusLabel.className = 'muted';
-  statusLabel.textContent = 'Durum';
-  const statusValue = document.createElement('span');
-  statusValue.textContent = String(detail.status || '-');
-  statusRow.append(statusLabel, statusValue);
-  container.appendChild(statusRow);
-
-  if (detail.created_at) {
-    const dateRow = document.createElement('div');
-    dateRow.className = 'order-detail-row';
-    const dateLabel = document.createElement('span');
-    dateLabel.className = 'muted';
-    dateLabel.textContent = 'Tarih';
-    const dateValue = document.createElement('span');
-    const parsed = new Date(detail.created_at);
-    dateValue.textContent = isNaN(parsed.getTime()) ? String(detail.created_at) : parsed.toLocaleString();
-    dateRow.append(dateLabel, dateValue);
-    container.appendChild(dateRow);
-  }
-
-  if (detail.shipping_address && typeof detail.shipping_address === 'object') {
-    const addrRow = document.createElement('div');
-    addrRow.className = 'order-detail-row';
-    const addrLabel = document.createElement('span');
-    addrLabel.className = 'muted';
-    addrLabel.textContent = 'Teslimat';
-    const addrValue = document.createElement('span');
-    const street = detail.shipping_address.street || '';
-    const city = detail.shipping_address.city || '';
-    addrValue.textContent = [street, city].filter(Boolean).join(', ');
-    addrRow.append(addrLabel, addrValue);
-    container.appendChild(addrRow);
-  }
-
-  const itemsHeader = document.createElement('div');
-  itemsHeader.className = 'muted';
-  itemsHeader.style.marginTop = '.5rem';
-  itemsHeader.textContent = 'Ürünler';
-  container.appendChild(itemsHeader);
-
-  const items = Array.isArray(detail.items) ? detail.items : [];
-  for (const item of items) {
-    const itemRow = document.createElement('div');
-    itemRow.className = 'order-detail-row';
-    const left = document.createElement('span');
-    left.textContent = (item.product_name || ('#' + item.product_id)) + ' × ' + item.quantity;
-    const right = document.createElement('span');
-    right.textContent = '$' + Number(item.unit_price).toFixed(2);
-    itemRow.append(left, right);
-    container.appendChild(itemRow);
-  }
-
-  const totalRow = document.createElement('div');
-  totalRow.className = 'order-detail-row';
-  const totalLabel = document.createElement('strong');
-  totalLabel.textContent = 'Toplam';
-  const totalValue = document.createElement('strong');
-  totalValue.textContent = '$' + Number(detail.total_amount).toFixed(2);
-  totalRow.append(totalLabel, totalValue);
-  container.appendChild(totalRow);
-}
-
-async function toggleOrderDetails(orderId, container, button) {
-  if (!container.classList.contains('hidden') && container.dataset.loadedId === String(orderId)) {
-    container.classList.add('hidden');
-    container.replaceChildren();
-    container.dataset.loadedId = '';
-    button.textContent = 'Detayları Gör';
-    return;
-  }
-  container.classList.remove('hidden');
-  container.replaceChildren();
-  const loading = document.createElement('p');
-  loading.className = 'muted';
-  loading.textContent = 'Yükleniyor...';
-  container.appendChild(loading);
-  try {
-    const response = await fetch('/api/checkout/orders/' + encodeURIComponent(orderId), { credentials: 'include' });
-    if (!response.ok) {
-      container.replaceChildren();
-      const err = document.createElement('p');
-      err.className = 'muted';
-      err.textContent = 'Detaylar yüklenemedi.';
-      container.appendChild(err);
-      return;
-    }
-    const detail = await response.json();
-    renderOrderDetails(container, detail);
-    container.dataset.loadedId = String(orderId);
-    button.textContent = 'Detayları Gizle';
-  } catch (err) {
-    container.replaceChildren();
-    const errNode = document.createElement('p');
-    errNode.className = 'muted';
-    errNode.textContent = 'Detaylar yüklenemedi.';
-    container.appendChild(errNode);
-  }
-}
-
-function renderOrders(orders) {
-  const list = byId('ordersList');
-  list.replaceChildren();
-  if (!orders.length) {
-    const empty = document.createElement('p');
-    empty.className = 'muted';
-    empty.textContent = 'Henüz siparişiniz yok.';
-    list.appendChild(empty);
-    return;
-  }
-  for (const order of orders) {
-    const row = document.createElement('div');
-    row.className = 'order-item';
-    const topRow = document.createElement('div');
-    topRow.className = 'order-row';
-    const title = document.createElement('strong');
-    title.textContent = 'Sipariş #' + order.id;
-    const total = document.createElement('span');
-    total.textContent = '$' + Number(order.total_amount).toFixed(2) + ' - ' + order.status;
-    topRow.append(title, total);
-    const detailsContainer = document.createElement('div');
-    detailsContainer.className = 'order-details hidden';
-    const detailsBtn = document.createElement('button');
-    detailsBtn.className = 'icon-btn';
-    detailsBtn.style.marginTop = '.5rem';
-    detailsBtn.style.width = 'auto';
-    detailsBtn.style.padding = '.35rem .75rem';
-    detailsBtn.textContent = 'Detayları Gör';
-    detailsBtn.addEventListener('click', () => toggleOrderDetails(order.id, detailsContainer, detailsBtn));
-    row.append(topRow, detailsBtn, detailsContainer);
-    list.appendChild(row);
-  }
-}
-async function loadOrders() {
-  const list = byId('ordersList');
-  list.replaceChildren();
-  if (!currentUser) {
-    const note = document.createElement('p');
-    note.className = 'muted';
-    note.textContent = 'Siparişlerinizi görmek için giriş yapın.';
-    list.appendChild(note);
-    return;
-  }
-  try {
-    const response = await fetch('/api/checkout/orders', { credentials: 'include' });
-    const orders = await response.json();
-    renderOrders(Array.isArray(orders) ? orders : []);
-  } catch (err) {
-    const error = document.createElement('p');
-    error.className = 'muted';
-    error.textContent = 'Siparişler yüklenemedi.';
-    list.appendChild(error);
-  }
-}
-async function checkSession() {
-  try {
-    const response = await fetch('/api/auth/me', { credentials: 'include' });
-    if (response.ok) {
-      const data = await response.json();
-      currentUser = { id: data.userId, username: data.username };
-      updateAuthUI(true);
-    }
-  } catch (err) {}
-}
-function bindEvents() {
-  byId('cartToggleBtn').addEventListener('click', () => byId('cartPanel').classList.toggle('open'));
-  byId('closeCartBtn').addEventListener('click', () => byId('cartPanel').classList.remove('open'));
-  byId('logoutBtn').addEventListener('click', logout);
-  byId('logoutPanelBtn').addEventListener('click', logout);
-  byId('loginTab').addEventListener('click', () => switchTab('login'));
-  byId('registerTab').addEventListener('click', () => switchTab('register'));
-  byId('loginBtn').addEventListener('click', login);
-  byId('verifyOtpBtn').addEventListener('click', verifyOtp);
-  byId('registerBtn').addEventListener('click', register);
-  byId('productsTab').addEventListener('click', () => showSection('products'));
-  byId('ordersTab').addEventListener('click', () => showSection('orders'));
-  byId('searchBtn').addEventListener('click', () => loadProducts(byId('searchInput').value.trim()));
-  byId('searchInput').addEventListener('keydown', event => { if (event.key === 'Enter') loadProducts(byId('searchInput').value.trim()); });
-  byId('refreshOrdersBtn').addEventListener('click', loadOrders);
-  byId('clearCartBtn').addEventListener('click', clearCart);
-  byId('checkoutBtn').addEventListener('click', checkout);
-}
-document.addEventListener('DOMContentLoaded', async () => {
-  bindEvents();
-  updateCartUI();
-  await getCsrfToken();
-  await checkSession();
-  await loadProducts();
-});
-</script>
+  <form class="cart-form" id="checkoutForm">
+    <fieldset>
+      <div class="form-group"><label for="shippingStreet">Adres</label><input id="shippingStreet" name="shippingAddress.street" autocomplete="street-address" required minlength="5" maxlength="200"><span class="field-error" id="shippingStreetError"></span></div>
+      <div class="form-group"><label for="shippingCity">Şehir</label><input id="shippingCity" name="shippingAddress.city" autocomplete="address-level2" required minlength="2" maxlength="100"><span class="field-error" id="shippingCityError"></span></div>
+      <div class="cart-summary"><span>Toplam</span><span id="cartTotal">$0.00</span></div>
+      <div class="actions"><button class="btn btn-danger" id="clearCartBtn" type="button">Temizle</button><button class="btn btn-primary" id="checkoutBtn" type="submit">Siparişi tamamla</button></div>
+    </fieldset>
+    <div class="msg" id="checkoutMsg" role="status"></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript>Bu mağaza için tarayıcınızda JavaScript açık olmalıdır.</noscript>
 </body>
 </html>

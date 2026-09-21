@@ -1,35 +1,52 @@
 {
   "name": "ecommerce-secure",
   "version": "1.0.0",
-  "description": "AWS Secure E-Commerce Application - Security by Design",
+  "description": "Yerel MySQL veya a\u00e7\u0131k demo modu ile g\u00fcvenlik odakl\u0131 e-ticaret demosu",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "test": "jest --coverage"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand --coverage",
+    "test:mysql": "node scripts/test-mysql.js",
+    "db:init": "node scripts/db-init.js",
+    "check": "node scripts/check.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "express-session": "^1.17.3",
-    "express-validator": "^7.0.1",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
-    "csurf": "^1.11.0",
-    "bcryptjs": "^2.4.3",
-    "mysql2": "^3.6.5",
-    "dotenv": "^16.3.1",
-    "winston": "^3.11.0",
-    "cookie-parser": "^1.4.6",
-    "validator": "^13.11.0",
-    "uuid": "^9.0.1",
-    "cors": "^2.8.5"
+    "express": "^4.22.3",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.2",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^7.2.0",
+    "csrf-sync": "^4.2.1",
+    "bcryptjs": "^3.0.3",
+    "mysql2": "^3.24.4",
+    "dotenv": "^16.6.1",
+    "winston": "^3.19.0",
+    "cors": "^2.8.6"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
+    "nodemon": "^3.1.14",
     "jest": "^29.7.0",
-    "supertest": "^6.3.4"
+    "supertest": "^7.2.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24 <25"
+  },
+  "jest": {
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/tests/mysql/"
+    ],
+    "setupFiles": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/src/server.js"
+    ],
+    "testTimeout": 15000
   }
 }

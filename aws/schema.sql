@@ -1,14 +1,6 @@
--- ═══════════════════════════════════════════════════════════
--- schema.sql — E-Ticaret Veritabanı Şeması (MySQL 8.0)
--- Güvenlik: En az yetki, şifrelenmiş alanlar, audit columns
--- ═══════════════════════════════════════════════════════════
-
-CREATE DATABASE IF NOT EXISTS ecommerce_db
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE ecommerce_db;
-
+-- MySQL 8.4. Yalnız boş, seçilmiş veritabanına scripts/db-init.js uygular.
+-- Katalog ve yerel örnek yönetici src/models/seed.js kaynağından gelir.
+-- Audit ve eski kilit sütunları saklanır; uygulama bunlara yazmaz.
 -- ─── Kullanıcılar ────────────────────────────────────────
 CREATE TABLE users (
   id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -24,7 +16,7 @@ CREATE TABLE users (
   updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_username (username),
   INDEX idx_phone_number (phone_number)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_ci;
 
 -- ─── Kategoriler ─────────────────────────────────────────
 CREATE TABLE categories (
@@ -32,7 +24,7 @@ CREATE TABLE categories (
   name      VARCHAR(100) NOT NULL,
   slug      VARCHAR(100) NOT NULL UNIQUE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_ci;
 
 -- ─── Ürünler ─────────────────────────────────────────────
 CREATE TABLE products (
@@ -47,9 +39,12 @@ CREATE TABLE products (
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+  CONSTRAINT ck_product_price CHECK (price > 0),
+  CONSTRAINT ck_product_stock CHECK (stock <= 1000000),
+  CONSTRAINT ck_product_name CHECK (CHAR_LENGTH(TRIM(name)) > 0),
   INDEX idx_category (category_id),
   FULLTEXT INDEX idx_search (name, description)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_ci;
 
 -- ─── Siparişler ──────────────────────────────────────────
 CREATE TABLE orders (
@@ -57,13 +52,17 @@ CREATE TABLE orders (
   user_id           INT UNSIGNED NOT NULL,
   total_amount      DECIMAL(10,2) NOT NULL,
   shipping_address  JSON NOT NULL,           -- Yapılandırılmış adres
+  request_key       CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  request_hash      CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  UNIQUE KEY uq_order_request (user_id, request_key),
+  CONSTRAINT ck_order_total CHECK (total_amount > 0),
   status            ENUM('pending','confirmed','shipped','delivered','cancelled') DEFAULT 'pending',
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
   INDEX idx_user_orders (user_id),
   INDEX idx_status (status)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_ci;
 
 -- ─── Sipariş Kalemleri ────────────────────────────────────
 CREATE TABLE order_items (
@@ -74,8 +73,11 @@ CREATE TABLE order_items (
   unit_price  DECIMAL(10,2) NOT NULL,        -- O anki fiyat saklanır (değişime karşı)
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+  CONSTRAINT ck_item_quantity CHECK (quantity > 0),
+  CONSTRAINT ck_item_price CHECK (unit_price > 0),
+  UNIQUE KEY uq_order_product (order_id, product_id),
   INDEX idx_order (order_id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_ci;
 
 -- ─── Güvenlik Audit Log ──────────────────────────────────
 CREATE TABLE security_audit_log (
@@ -89,41 +91,4 @@ CREATE TABLE security_audit_log (
   INDEX idx_event_type (event_type),
   INDEX idx_created_at (created_at),
   INDEX idx_ip (ip_address)
-) ENGINE=InnoDB;
-
--- ─── En Az Yetki İlkesi: Uygulama DB Kullanıcısı ─────────
--- NOT: Bu komutları AWS RDS'de root ile çalıştır
--- CREATE USER 'app_user'@'%' IDENTIFIED BY 'STRONG_PASSWORD';
--- GRANT SELECT, INSERT, UPDATE ON ecommerce_db.* TO 'app_user'@'%';
--- GRANT DELETE ON ecommerce_db.order_items TO 'app_user'@'%';
--- REVOKE DROP, CREATE, ALTER, INDEX ON ecommerce_db.* FROM 'app_user'@'%';
--- FLUSH PRIVILEGES;
-
--- ─── Örnek Veriler ───────────────────────────────────────
-INSERT INTO categories (name, slug) VALUES
-  ('Electronics', 'electronics'),
-  ('Clothing', 'clothing'),
-  ('Books', 'books'),
-  ('Accessories', 'accessories'),
-  ('Office', 'office'),
-  ('Gaming', 'gaming'),
-  ('Mobile', 'mobile');
-
-INSERT INTO products (name, description, price, stock, image_url, category_id) VALUES
-  ('Laptop Pro 15', 'High-performance laptop for professionals', 1299.99, 50, '💻', 1),
-  ('Wireless Headphones', 'Noise-cancelling over-ear headphones', 199.99, 120, '🎧', 1),
-  ('Python Programming Book', 'Complete guide to Python development', 39.99, 200, '📘', 3),
-  ('Secure Coding T-Shirt', '100% cotton developer tee', 24.99, 75, '👕', 2),
-  ('Mechanical Keyboard', 'RGB backlit mechanical keyboard with hot-swap switches', 129.99, 60, '⌨️', 1),
-  ('Wireless Mouse', 'Ergonomic wireless mouse with silent click', 39.99, 150, '🖱️', 1),
-  ('4K Monitor 27"', '27-inch 4K UHD IPS monitor', 349.99, 35, '🖥️', 1),
-  ('Smartwatch Series 8', 'Fitness tracking smartwatch with heart rate sensor', 249.99, 80, '⌚', 1),
-  ('Travel Backpack', 'Water-resistant 25L laptop backpack', 59.99, 100, '🎒', 4),
-  ('Phone Stand', 'Adjustable aluminum phone and tablet stand', 19.99, 200, '📱', 5),
-  ('USB-C Hub 7-in-1', 'Multi-port USB-C hub with HDMI and SD reader', 44.99, 90, '🔌', 4),
-  ('HD Webcam', '1080p webcam with built-in stereo microphone', 69.99, 70, '📷', 1),
-  ('Gaming Chair', 'Ergonomic gaming chair with lumbar support', 299.99, 25, '🪑', 6),
-  ('External SSD 1TB', 'Portable USB 3.2 external solid state drive', 119.99, 110, '💾', 1),
-  ('Tablet 10"', '10-inch Android tablet for media and reading', 219.99, 45, '📲', 1),
-  ('Bluetooth Speaker', 'Portable waterproof Bluetooth speaker', 79.99, 130, '🔊', 1),
-  ('Portable Charger 20000mAh', 'Fast-charging portable power bank', 49.99, 160, '🔋', 7);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_ci;

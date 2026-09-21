@@ -29,6 +29,7 @@ const loadNotifier = () => {
     error: jest.fn(),
     debug: jest.fn(),
     security: jest.fn(),
+    localOtp: jest.fn(),
   };
   jest.doMock('../src/utils/logger', () => logger);
   const notifier = require('../src/services/whatsappNotifier');
@@ -38,6 +39,7 @@ const loadNotifier = () => {
 beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
   resetWhatsAppEnv();
+  process.env.WHATSAPP_GRAPH_API_VERSION = 'v20.0';
   global.fetch = jest.fn();
 });
 
@@ -131,7 +133,7 @@ describe('whatsappNotifier', () => {
     global.fetch.mockRejectedValue(new Error('network down'));
     const { sendOrderNotification } = loadNotifier();
 
-    await expect(sendOrderNotification(sampleOrder)).resolves.toEqual({ enabled: true, sent: false, error: 'network down' });
+    await expect(sendOrderNotification(sampleOrder)).resolves.toEqual({ enabled: true, sent: false, error: 'WhatsApp notification failed.' });
   });
 
   test('HTTP failure returns sent false', async () => {
@@ -166,11 +168,8 @@ describe('whatsappNotifier', () => {
 
     await sendOtpCode('+905555555555', '241414');
 
-    expect(logger.warn).toHaveBeenCalledWith('LOCAL MOCK WhatsApp OTP code', {
-      purpose: 'otp-login',
-      to: '+905555555555',
-      otpCode: '241414',
-    });
+    expect(logger.localOtp).toHaveBeenCalledWith('+905555555555', '241414');
+    expect(JSON.stringify(logger.info.mock.calls)).not.toContain('241414');
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
@@ -181,7 +180,7 @@ describe('whatsappNotifier', () => {
 
     await sendOtpCode('+905555555555', '241414');
 
-    expect(logger.warn).not.toHaveBeenCalledWith('LOCAL MOCK WhatsApp OTP code', expect.anything());
+    expect(logger.localOtp).not.toHaveBeenCalled();
     expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('241414');
     expect(JSON.stringify(logger.info.mock.calls)).not.toContain('241414');
     expect(global.fetch).not.toHaveBeenCalled();
@@ -227,4 +226,23 @@ describe('whatsappNotifier', () => {
     expect(result).toEqual({ enabled: true, sent: false, error: 'Missing WhatsApp notification configuration.' });
     expect(global.fetch).not.toHaveBeenCalled();
   });
+});
+
+test.each(['fetch', 'body'])('WhatsApp %s timeout aborts and redacts errors', async stage => {
+  process.env.NODE_ENV = 'production';
+  process.env.WHATSAPP_ACCESS_TOKEN = 'private-token'; process.env.WHATSAPP_PHONE_NUMBER_ID = 'test-id'; process.env.WHATSAPP_TIMEOUT_MS = '50';
+  if (stage === 'fetch') global.fetch.mockImplementation(() => new Promise(() => {}));
+  else global.fetch.mockResolvedValue({ ok: true, json: () => new Promise(() => {}) });
+  const { sendOtpCode, logger } = loadNotifier();
+  const start = Date.now(), result = await sendOtpCode('+905555555555', '123456');
+  expect(result.sent).toBe(false); expect(Date.now() - start).toBeLessThan(1000);
+  expect(global.fetch.mock.calls[0][1].signal.aborted).toBe(true);
+  expect(JSON.stringify(logger.warn.mock.calls)).not.toMatch(/private-token|123456|905555555555/);
+});
+
+test('HTTP 200 without a message identifier is not reported as sent', async () => {
+  process.env.NODE_ENV = 'production'; process.env.WHATSAPP_ACCESS_TOKEN = 'private-token'; process.env.WHATSAPP_PHONE_NUMBER_ID = 'test-id';
+  global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+  const { sendOtpCode } = loadNotifier();
+  expect((await sendOtpCode('+905555555555', '123456')).sent).toBe(false);
 });

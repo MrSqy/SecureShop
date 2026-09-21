@@ -16,6 +16,8 @@ const LOCK_DURATIONS_MS = [
   30 * 60 * 1000,
 ];
 
+const STATE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_ENTRIES = 10000;
 const passwordState = new Map();
 const otpState = new Map();
 
@@ -27,6 +29,7 @@ const getLockDurationMs = (lockCount) => {
 };
 
 const readStatus = (stateMap, key) => {
+  cleanup();
   const entry = stateMap.get(key);
   if (!entry || !entry.lockedUntil) return { locked: false };
   const remaining = entry.lockedUntil - Date.now();
@@ -39,7 +42,10 @@ const readStatus = (stateMap, key) => {
 };
 
 const recordFailure = (stateMap, key, threshold) => {
+  cleanup();
+  if (!stateMap.has(key) && stateMap.size >= MAX_ENTRIES) return { locked: true, retryAfter: 60 };
   const entry = stateMap.get(key) || { failures: 0, lockCount: 0, lockedUntil: 0 };
+  entry.updatedAt = Date.now();
   entry.failures = (entry.failures || 0) + 1;
   if (entry.failures >= threshold) {
     entry.lockCount = (entry.lockCount || 0) + 1;
@@ -52,6 +58,14 @@ const recordFailure = (stateMap, key, threshold) => {
   stateMap.set(key, entry);
   return { locked: false };
 };
+
+function cleanup() {
+  for (const map of [passwordState, otpState]) {
+    for (const [key, entry] of map) if (Date.now() - entry.updatedAt > STATE_TTL_MS) map.delete(key);
+  }
+}
+const cleanupTimer = setInterval(cleanup, 60000);
+cleanupTimer.unref();
 
 const getPasswordLockStatus = (username) => readStatus(passwordState, normalizeKey(username));
 const recordPasswordFailure = (username) => recordFailure(passwordState, normalizeKey(username), PASSWORD_FAILURE_THRESHOLD);

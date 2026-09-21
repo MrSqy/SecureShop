@@ -1,206 +1,108 @@
-/**
- * auth.js — Kimlik Doğrulama Route'ları
- */
-const express = require('express');
+const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const db = require('../models/db');
 const logger = require('../utils/logger');
 const { SESSION_COOKIE_NAME } = require('../config/session');
 const { sendOtpCode } = require('../services/whatsappNotifier');
-const { loginLimiter, registerLimiter } = require('../middleware/rateLimiter');
+const { loginLimiter, otpLimiter, registerLimiter } = require('../middleware/rateLimiter');
 const { validateLogin, validateRegister, validateOtpVerify } = require('../middleware/validation');
-const {
-  getPasswordLockStatus,
-  recordPasswordFailure,
-  clearPasswordFailures,
-  getOtpLockStatus,
-  recordOtpFailure,
-  clearOtpFailures,
-  _resetAuthLockouts,
-} = require('../services/authLockout');
-
-const LOCKED_PASSWORD_ERROR = 'Too many failed attempts. Try again later.';
-const LOCKED_OTP_ERROR = 'Too many failed verification attempts. Try again later.';
-
-const router = express.Router();
-const OTP_TTL_MS = 5 * 60 * 1000;
-const pendingOtps = new Map();
-
-const generateOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
-
-const buildUserResponse = (user) => ({
-  id: user.id,
-  username: user.username,
-  phoneNumber: user.phoneNumber || user.phone_number,
-});
-
-const createAuthenticatedSession = (req, user, next, res) => {
-  req.session.regenerate((err) => {
-    if (err) return next(err);
-
-    req.session.userId = user.id;
-    req.session.username = user.username;
-    req.session.loginTime = Date.now();
-
-    logger.info('User logged in after OTP verification', { userId: user.id, ip: req.ip });
-    return res.json({
-      message: 'Login successful.',
-      user: buildUserResponse(user),
-    });
-  });
-};
-
+const { requireAuth } = require('../middleware/requireAuth');
+const locks = require('../services/authLockout');
+const challenges = require('../services/otpChallenges');
+const { AppError } = require('../utils/errors');
+const dummyHash = bcrypt.hashSync('Dummy@Password42', 12);
+const userView = user => ({ id: user.id, username: user.username, phoneNumber: user.phone_number });
+function rejectLocked(res, status, otp = false) {
+  res.set('Retry-After', String(status.retryAfter));
+  return res.status(429).json({ error: otp ? 'Too many failed verification attempts. Try again later.' : 'Too many failed attempts. Try again later.', code: otp ? 'OTP_LOCKED' : 'LOGIN_LOCKED', retryAfter: status.retryAfter });
+}
+async function deliver(user, sessionId) {
+  const { entry, code } = challenges.reserve(user, sessionId);
+  let result;
+  try { result = await sendOtpCode(user.phone_number, code); }
+  catch { result = { sent: false }; }
+  if (!result.sent || !challenges.confirmDelivery(entry)) {
+    challenges.remove(entry.id);
+    throw new AppError(503, 'OTP_DELIVERY_FAILED', 'Verification code could not be sent.');
+  }
+  return { otpRequired: true, message: 'Verification code sent.', expiresAt: entry.expiresAt, resendAt: entry.resendAt };
+}
 router.post('/register', registerLimiter, validateRegister, async (req, res, next) => {
   try {
     const { username, phoneNumber, password } = req.body;
-
-    const [existing] = await db.execute(
-      'SELECT id FROM users WHERE username = ? OR phone_number = ?',
-      [username, phoneNumber]
-    );
-
-    if (existing.length > 0) {
-      return res.status(409).json({ error: 'Registration failed. Please try different credentials.' });
-    }
-
     const passwordHash = await bcrypt.hash(password, 12);
-
-    const [result] = await db.execute(
-      'INSERT INTO users (username, phone_number, password_hash, created_at) VALUES (?, ?, ?, NOW())',
-      [username, phoneNumber, passwordHash]
-    );
-
-    logger.info('New user registered', { userId: result.insertId, ip: req.ip });
+    const userId = await db.createUser({ username, phoneNumber, passwordHash });
+    logger.info('Account created', { userId, requestId: req.id });
     res.status(201).json({ message: 'Account created successfully.' });
-  } catch (err) {
-    next(err);
-  }
+  } catch (error) { next(error); }
 });
-
 router.post('/login', loginLimiter, validateLogin, async (req, res, next) => {
   try {
     const { username, password } = req.body;
-
-    const lockStatus = getPasswordLockStatus(username);
-    if (lockStatus.locked) {
-      logger.security('LOGIN_LOCKED', { username, ip: req.ip, retryAfter: lockStatus.retryAfter });
-      return res.status(429).json({ error: LOCKED_PASSWORD_ERROR, retryAfter: lockStatus.retryAfter });
+    const status = locks.getPasswordLockStatus(username);
+    if (status.locked) return rejectLocked(res, status);
+    const user = await db.findUserByUsername(username);
+    const matched = await bcrypt.compare(password, user?.password_hash || dummyHash);
+    if (!user?.is_active || !matched) {
+      const failure = locks.recordPasswordFailure(username);
+      logger.security('LOGIN_FAILED', { requestId: req.id });
+      if (failure.locked) return rejectLocked(res, failure);
+      return res.status(401).json({ error: 'Invalid credentials.', code: 'INVALID_CREDENTIALS' });
     }
-
-    const [rows] = await db.execute(
-      'SELECT id, username, phone_number, password_hash, is_active FROM users WHERE username = ?',
-      [username]
-    );
-
-    const dummyHash = '$2a$12$8JpqaA51i2Yq7fbAvY6O4e6A2Ep77ZLy1C14dShbTMbprjA6v6/bK';
-    const storedHash = rows.length > 0 ? rows[0].password_hash : dummyHash;
-    const passwordMatch = await bcrypt.compare(password, storedHash);
-
-    if (rows.length === 0 || !passwordMatch || !rows[0].is_active) {
-      logger.security('LOGIN_FAILED', { username, ip: req.ip });
-      const failure = recordPasswordFailure(username);
-      if (failure.locked) {
-        logger.security('LOGIN_LOCKOUT_TRIGGERED', { username, ip: req.ip, retryAfter: failure.retryAfter });
-        return res.status(429).json({ error: LOCKED_PASSWORD_ERROR, retryAfter: failure.retryAfter });
-      }
-      return res.status(401).json({ error: 'Invalid credentials.' });
-    }
-
-    clearPasswordFailures(username);
-
-    const user = rows[0];
-    const otpCode = generateOtpCode();
-    const otpHash = await bcrypt.hash(otpCode, 10);
-
-    pendingOtps.set(user.username, {
-      user: {
-        id: user.id,
-        username: user.username,
-        phoneNumber: user.phone_number,
-      },
-      otpHash,
-      expiresAt: Date.now() + OTP_TTL_MS,
-    });
-
-    const sendResult = await sendOtpCode(user.phone_number, otpCode);
-    if (!sendResult.sent) {
-      pendingOtps.delete(user.username);
-      logger.warn('OTP delivery failed', { userId: user.id, username: user.username });
-      return res.status(503).json({ error: 'Verification code could not be sent.' });
-    }
-
-    logger.info('OTP verification code sent', { userId: user.id, username: user.username });
-    return res.json({ otpRequired: true, message: 'Verification code sent.' });
-  } catch (err) {
-    next(err);
-  }
+    locks.clearPasswordFailures(username);
+    const result = await deliver(user, req.sessionID);
+    // Login's new challenge does not carry authentication for a previous account.
+    delete req.session.userId; delete req.session.username;
+    res.json(result);
+  } catch (error) { next(error); }
 });
-
-router.post('/verify-otp', loginLimiter, validateOtpVerify, async (req, res, next) => {
+router.post('/resend-otp', otpLimiter, async (req, res, next) => {
+  try {
+    const entry = challenges.forSession(req.sessionID);
+    if (!entry) throw new AppError(401, 'OTP_INVALID', 'Invalid or expired verification code.');
+    const status = locks.getOtpLockStatus(entry.username);
+    if (status.locked) return rejectLocked(res, status, true);
+    const user = await db.findUserById(entry.userId);
+    if (!user?.is_active) { challenges.cancelSession(req.sessionID); throw new AppError(401, 'OTP_INVALID', 'Invalid or expired verification code.'); }
+    res.json(await deliver(user, req.sessionID));
+  } catch (error) { next(error); }
+});
+router.post('/verify-otp', otpLimiter, validateOtpVerify, async (req, res, next) => {
   try {
     const { username, otpCode } = req.body;
-
-    const lockStatus = getOtpLockStatus(username);
-    if (lockStatus.locked) {
-      logger.security('OTP_LOCKED', { username, ip: req.ip, retryAfter: lockStatus.retryAfter });
-      return res.status(429).json({ error: LOCKED_OTP_ERROR, retryAfter: lockStatus.retryAfter });
-    }
-
-    const pending = pendingOtps.get(username);
-
-    if (!pending) {
-      return res.status(401).json({ error: 'Invalid or expired verification code.' });
-    }
-
-    if (Date.now() > pending.expiresAt) {
-      pendingOtps.delete(username);
-      logger.security('OTP_EXPIRED', { username, ip: req.ip });
-      return res.status(401).json({ error: 'Invalid or expired verification code.' });
-    }
-
-    const otpMatch = await bcrypt.compare(otpCode, pending.otpHash);
-    if (!otpMatch) {
-      logger.security('OTP_FAILED', { username, ip: req.ip });
-      const failure = recordOtpFailure(username);
-      if (failure.locked) {
-        logger.security('OTP_LOCKOUT_TRIGGERED', { username, ip: req.ip, retryAfter: failure.retryAfter });
-        return res.status(429).json({ error: LOCKED_OTP_ERROR, retryAfter: failure.retryAfter });
+    const status = locks.getOtpLockStatus(username);
+    if (status.locked) return rejectLocked(res, status, true);
+    const entry = challenges.consume(req.sessionID, username, otpCode);
+    if (!entry) {
+      if (entry === false) {
+        const failure = locks.recordOtpFailure(username);
+        if (failure.locked) return rejectLocked(res, failure, true);
       }
-      return res.status(401).json({ error: 'Invalid or expired verification code.' });
+      return res.status(401).json({ error: 'Invalid or expired verification code.', code: 'OTP_INVALID' });
     }
-
-    pendingOtps.delete(username);
-    clearOtpFailures(username);
-    clearPasswordFailures(username);
-    return createAuthenticatedSession(req, pending.user, next, res);
-  } catch (err) {
-    next(err);
-  }
+    const user = await db.findUserById(entry.userId);
+    if (!user?.is_active) throw new AppError(401, 'OTP_INVALID', 'Invalid or expired verification code.');
+    req.session.regenerate(error => {
+      if (error) return next(error);
+      req.session.userId = user.id; req.session.username = user.username;
+      req.session.save(saveError => {
+        if (saveError) return next(saveError);
+        locks.clearOtpFailures(username); locks.clearPasswordFailures(username);
+        res.json({ message: 'Login successful.', user: userView(user) });
+      });
+    });
+  } catch (error) { next(error); }
 });
-
 router.post('/logout', (req, res, next) => {
-  const userId = req.session?.userId;
-
-  req.session.destroy((err) => {
-    if (err) return next(err);
-    res.clearCookie(SESSION_COOKIE_NAME);
-    logger.info('User logged out', { userId, ip: req.ip });
+  challenges.cancelSession(req.sessionID);
+  req.session.destroy(error => {
+    if (error) return next(error);
+    res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
     res.json({ message: 'Logged out successfully.' });
   });
 });
-
-router.get('/me', (req, res) => {
-  if (!req.session?.userId) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
-  res.json({
-    userId: req.session.userId,
-    username: req.session.username,
-  });
-});
-
-router._pendingOtps = pendingOtps;
-router._OTP_TTL_MS = OTP_TTL_MS;
-router._resetAuthLockouts = _resetAuthLockouts;
-
+router.get('/me', requireAuth, (req, res) => res.json({ userId: req.user.id, username: req.user.username }));
+router._pendingOtps = challenges.pending;
+router._OTP_TTL_MS = challenges.OTP_TTL_MS;
+router._resetAuthLockouts = () => { locks._resetAuthLockouts(); challenges.reset(); };
 module.exports = router;

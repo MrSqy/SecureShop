@@ -1,218 +1,63 @@
-/**
- * app.js — Ana Uygulama Giriş Noktası
- *
- * Güvenlik Katmanları (yukarıdan aşağıya):
- * 1. Helmet     — HTTP Security Headers (XSS, Clickjacking, MIME Sniffing)
- * 2. Rate Limit — DDoS / Brute Force koruması
- * 3. CORS       — Cross-Origin Resource Sharing kısıtlaması
- * 4. Session    — Güvenli cookie konfigürasyonu
- * 5. CSRF       — Synchronizer Token Pattern
- * 6. Validation — Input sanitization (her route'da ayrıca)
- * 7. Error      — Güvenli hata yönetimi (stack trace gizleme)
- */
-require('dotenv').config();
-
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const helmet = require('helmet');
 const session = require('express-session');
-const cookieParser = require('cookie-parser');
-const csrf = require('csurf');
 const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-
-const logger = require('./utils/logger');
+const { csrfSync } = require('csrf-sync');
+const path = require('node:path');
+const { randomUUID } = require('node:crypto');
+const { readRuntime } = require('./config/runtime');
+const { AppError } = require('./utils/errors');
 const { SESSION_COOKIE_NAME } = require('./config/session');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { notFoundHandler, csrfErrorHandler, globalErrorHandler } = require('./middleware/errorHandler');
-
+const config = readRuntime();
+const db = require('./models/db');
 const app = express();
-const PORT = process.env.PORT || 3000;
-const isProduction = process.env.NODE_ENV === 'production';
-const MIN_SESSION_SECRET_LENGTH = 32;
-const LOCAL_SESSION_SECRET = 'local-development-session-secret-change-me-32';
-
-const getSessionSecret = () => {
-  const secret = process.env.SESSION_SECRET;
-
-  if (isProduction) {
-    if (!secret) {
-      throw new Error('SESSION_SECRET is required in production.');
+app.disable('x-powered-by');
+app.set('trust proxy', config.trustProxy);
+app.locals.config = config;
+app.locals.shuttingDown = false;
+app.use((req, res, next) => { req.id = randomUUID(); res.set('X-Request-ID', req.id); next(); });
+app.use(helmet({ contentSecurityPolicy: { directives: {
+  defaultSrc: ["'self'"], scriptSrc: ["'self'"], scriptSrcAttr: ["'none'"], styleSrc: ["'self'"], styleSrcAttr: ["'none'"],
+  imgSrc: ["'self'", 'data:'], fontSrc: ["'self'"], connectSrc: ["'self'"], objectSrc: ["'none'"],
+  upgradeInsecureRequests: config.production ? [] : null,
+} }, strictTransportSecurity: config.production ? { maxAge: 31536000, includeSubDomains: true } : false }));
+app.use((req, res, next) => cors({
+  origin(origin, callback) {
+    // Local same-origin development supports a custom port without trusting arbitrary Host headers.
+    let local = false;
+    if (origin && !config.production) {
+      try { const url = new URL(origin); local = url.origin === origin && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) && origin === `${req.protocol}://${req.get('host')}`; } catch {}
     }
-    if (secret.length < MIN_SESSION_SECRET_LENGTH) {
-      throw new Error('SESSION_SECRET must be at least 32 characters in production.');
-    }
-    return secret;
-  }
-
-  if (!secret) {
-    logger.warn('SESSION_SECRET missing; using local development fallback.');
-    return LOCAL_SESSION_SECRET;
-  }
-
-  if (secret.length < MIN_SESSION_SECRET_LENGTH) {
-    logger.warn('SESSION_SECRET is shorter than 32 characters; acceptable only for local development/test.');
-  }
-
-  return secret;
-};
-
-const enforceProductionSessionStore = () => {
-  if (!isProduction) return;
-
-  if (process.env.ALLOW_MEMORY_STORE_IN_PRODUCTION === 'true') {
-    logger.warn('ALLOW_MEMORY_STORE_IN_PRODUCTION=true; using express-session MemoryStore in production for short-lived demo only.');
-    return;
-  }
-
-  throw new Error('Production refuses express-session MemoryStore. Configure a production session store or set ALLOW_MEMORY_STORE_IN_PRODUCTION=true only for a short-lived demo.');
-};
-
-if (isProduction) {
-  app.set('trust proxy', 1);
-}
-
-// ─── Log Dizini ────────────────────────────────────────────────────────────
-const logDir = path.join(__dirname, '../logs');
-if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-
-// ─── 1. Helmet — Security Headers ─────────────────────────────────────────
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],               // Inline script izin verildi (dev/demo kolaylığı için)
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      objectSrc: ["'none'"],              // Flash/plugin yasak
-    },
-  },
-  hsts: isProduction ? {
-    maxAge: 31536000,                     // 1 yıl HTTPS zorunlu (prod)
-    includeSubDomains: true,
-    preload: true,
-  } : {
-    maxAge: 0,                            // Geliştirme/yerel ortamda HTTPS zorlamasını sıfırla
-    includeSubDomains: true,
-  },
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-}));
-
-// ─── 2. CORS ───────────────────────────────────────────────────────────────
-const allowedOrigins = isProduction
-  ? ['https://yourdomain.com']            // Production: sadece kendi domain
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      logger.security('CORS_BLOCKED', { origin });
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,                      // Cookie'lere izin ver
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'X-CSRF-Token'],
-}));
-
-// ─── 3. Body Parser ────────────────────────────────────────────────────────
-app.use(express.json({ limit: '10kb' }));       // Büyük payload saldırısı koruması
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(cookieParser());
-
-// ─── 4. Session Konfigürasyonu ─────────────────────────────────────────────
-const sessionSecret = getSessionSecret();
-enforceProductionSessionStore();
-
-app.use(session({
-  secret: sessionSecret,
-  name: SESSION_COOKIE_NAME,              // Default 'connect.sid' yerine generic isim
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,                       // JavaScript'ten erişim engeli (XSS koruması)
-    secure: isProduction, // HTTPS zorunlu (production)
-    sameSite: 'strict',                   // CSRF koruması (ek katman)
-    maxAge: 60 * 60 * 1000,              // 1 saat session süresi
-  },
-}));
-
-// ─── 5. CSRF Koruması ─────────────────────────────────────────────────────
-// Not: API-only kullanımda double-submit cookie pattern tercih edilebilir
-const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
-  },
+    if (!origin || local || config.origins.includes(origin)) callback(null, true);
+    else callback(new AppError(403, 'ORIGIN_REJECTED', 'Bu kaynaktan yapılan istek kabul edilmedi.'));
+  }, credentials: true, methods: ['GET', 'POST'], allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Idempotency-Key'],
+})(req, res, next));
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: false, limit: '10kb' }));
+app.get('/health', (req, res) => res.status(app.locals.shuttingDown ? 503 : 200).json({ status: app.locals.shuttingDown ? 'stopping' : 'alive' }));
+app.get('/ready', async (req, res) => {
+  try { if (app.locals.shuttingDown) throw new Error('stopping'); await db.ready(); res.json({ status: 'ready', database: db.mode }); }
+  catch { res.status(503).json({ status: 'not-ready' }); }
 });
-
-// CSRF token endpoint'i (frontend bunu çekip her POST isteğine ekler)
-app.get('/api/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-});
-
-// ─── 6. Static Files ───────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../public')));
-
-// ─── 7. Health Check (ALB için) ────────────────────────────────────────────
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-  });
-});
-
-// ─── 8. API Route'ları ────────────────────────────────────────────────────
-// Route'lar session guardları kurulduktan sonra yüklenir.
-const authRouter = require('./routes/auth');
-const productsRouter = require('./routes/products');
-const checkoutRouter = require('./routes/checkout');
-
-// Auth route'ları da CSRF ile korunur; token endpoint'i önce tanımlıdır.
-app.use('/api/auth', csrfProtection, authRouter);
-
-// Diğer API'lar CSRF + rate limit ile korunur
-app.use('/api/products', csrfProtection, productsRouter);
-app.use('/api/checkout', csrfProtection, checkoutRouter);
-
-// ─── 9. Frontend SPA (catch-all) ──────────────────────────────────────────
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-// ─── 10. Error Handlers (sıra önemli!) ────────────────────────────────────
-app.use(csrfErrorHandler);
+const store = new session.MemoryStore();
+app.locals.sessionStore = store;
+const cleanupSessions = setInterval(() => store.all(() => {}), 60000);
+cleanupSessions.unref();
+app.locals.dispose = () => clearInterval(cleanupSessions);
+app.use('/api', apiLimiter, (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+app.use(session({ name: SESSION_COOKIE_NAME, secret: config.secret, store, resave: false, saveUninitialized: false,
+  cookie: { path: '/', httpOnly: true, secure: config.production, sameSite: 'strict', maxAge: config.sessionMs } }));
+const { generateToken, csrfSynchronisedProtection } = csrfSync({ size: 32 });
+app.get('/api/csrf-token', (req, res) => res.json({ csrfToken: generateToken(req) }));
+app.use('/api', csrfSynchronisedProtection);
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/products', require('./routes/products'));
+app.use('/api/checkout', require('./routes/checkout'));
 app.use(notFoundHandler);
+app.use(csrfErrorHandler);
 app.use(globalErrorHandler);
-
-// ─── Server Başlat ────────────────────────────────────────────────────────
-if (require.main === module) {
-  app.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`, {
-      environment: process.env.NODE_ENV,
-      port: PORT,
-    });
-    console.log('\nSecure E-Commerce Server');
-    console.log(`   URL: http://localhost:${PORT}`);
-    console.log(`   ENV: ${process.env.NODE_ENV || 'development'}\n`);
-  });
-}
-
-// Beklenmedik hataları yakala (process çökmesini önle)
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception — shutting down', { error: err.message, stack: err.stack });
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled Promise Rejection', { reason });
-  process.exit(1);
-});
-
 module.exports = app;

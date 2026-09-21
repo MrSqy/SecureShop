@@ -1,3 +1,5 @@
+> **Tarihsel kayıt (23 Mayıs 2026).** Aşağıdaki metin eski sürümü anlatır; güncel komut, test veya üretim kanıtı değildir. Son kod için [Türkçe rehberi](../PROJE_REHBERI.md) ve [21 Eylül doğrulamasını](DOGRULAMA.md) okuyun. Eski test sayıları, bağımlılık bulguları ve dosya adları bilerek tarihsel kayıt olarak korunmuştur.
+
 # Final Local Validation Report
 
 Date: 2026-05-23  
