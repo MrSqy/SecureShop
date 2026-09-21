@@ -291,3 +291,11 @@ Ek bulgu: kaybolan sipariş yanıtından sonra429 veya403 gelmesi istemcide pend
 Gerçek tarayıcı kaynağıyla yeni8 regresyonun6'sı eski kodda başarısızdı; düzeltmeyle8'i de geçti. Testlerin küçük DOM/fetch taklitleri kullandığı, gerçek tarayıcı ve SQL kanıtlarının ayrı olduğu rehberde açıklandı. Son sonuçlar docs/DOGRULAMA.md dosyasındadır.
 
 İlk üç commit normal push ile origin/main'e gönderildi.65a910a için gerçek GitHub Actions unit/mysql işleri geçti. Ardından CI'nın Node20 action motoru uyarısını gidermek için resmi Node24 tabanlı checkout v7.0.1/setup-node v7.0.0 sürümleri ayrı bakım commit'ine alındı. Yeni ürün kapsamı eklenmedi; son workflow sonucu ayrıca doğrulanır.
+
+## 10. MIT lisansı — 21 Eylül 2026
+
+Kullanıcı önce taslağı inceledi, ardından “Uygundur. Bunu oluşturup pushlayabiliriz.” diyerek uygulama ve push için onay verdi. Başlangıç dalı main, commit 3140fae; çalışma ağacı temizdi.
+
+Kabul edilen metin InvestSim reposundaki standart MIT metninin aynısıdır. Telif sahibi ve yıl: `Copyright (c) 2026 Baran Demir B.`. Kök LICENSE dosyası, README lisans bölümü, package.json lisans alanı ve npm ile eşleştirilen package-lock.json kök proje kaydı bu kapsamın parçalarıdır. Rehber ve dosya envanteri de yeni dosyayı kapsar. Üçüncü taraf bağımlılıklar kendi lisanslarına tabidir.
+
+Bu çalışma tek bir lisans commiti olarak gönderilir. Kabul kontrolleri: lisans metninin onaylanan örnekle birebir eşleşmesi, iki paket kaydında MIT bulunması, bağımlılık kayıtlarının korunması, yerel bağlantı/rehber envanteri ve git diff --check. Uygulama davranışı değişmediğinden yeni davranış testi eklenmez; push ile mevcut CI işleri çalışır.

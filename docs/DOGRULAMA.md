@@ -64,3 +64,9 @@ Uzak CI sonucu yerel test sonucundan ayrıdır. Bu kayıt push öncesi hazırlan
 [65a910a commit'inin Security CI çalışması](https://github.com/MrSqy/SecureShop/actions/runs/35639448629) gerçekten GitHub üzerinde başarılı oldu: unit işi 1 dakika 21 saniye, mysql işi 39 saniye. Temiz kurulum, check, npm test, audit ve ayrı MySQL komutları geçti. Bu sonuç artık yerel testten çıkarılmış bir varsayım değildir.
 
 Bu çalışmada checkout@v4 ve setup-node@v4 için Node20 motoru uyarısı görüldü. Resmi yayın notları ve action.yml dosyaları kontrol edilerek checkout **v7.0.1**, setup-node **v7.0.0** seçildi; ikisi Node24 kullanır. Workflow'un push/pull_request olayları, Node24 uygulama sürümü, npm cache ve test komutları değişmedi. Bu son bakım commit'inin uzak sonucu ayrıca kontrol edilir. GitHub'ın ubuntu-latest için gelecekteki Ubuntu26 geçiş duyurusu ürün testi hatası değildir; runner değiştiğinde davranış yeniden değerlendirilmelidir.
+
+## MIT lisansı doğrulaması — 21 Eylül 2026
+
+Kullanıcının onayladığı LICENSE metni, InvestSim örneğiyle bayt düzeyinde birebir karşılaştırıldı. Telif satırı `Copyright (c) 2026 Baran Demir B.`; package.json ve npm ile güncellenen package-lock.json kök proje kaydında lisans MIT. Lisans alanları çıkarılıp önceki commit ile JSON karşılaştırması yapıldığında diğer bütün paket ve bağımlılık kayıtları aynı kaldı.
+
+`npm run check` 61 proje dosyası için geçti; README/rehber bağlantıları ve yeni LICENSE envanter kaydı doğrulandı. `git diff --check` geçti. Bu adım lisans, paket metaverisi ve belgelerle sınırlı olduğundan yerelde uygulama/MySQL testleri yeniden çalıştırılmadı; yukarıdaki davranış sonuçları kendi doğrulama aşamalarına aittir. Push, mevcut GitHub Actions unit/mysql işlerini yeniden çalıştırır; sonucu ilgili commit'in CI kaydından kontrol edilir.

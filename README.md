@@ -54,3 +54,10 @@ MySQL komutu benzersiz isimli, geçici konteyner açar; örnek verilerle çalı�
 Oturumlar, giriş kodları, kilitler ve istek limitleri tek Node sürecinin belleğindedir. Yeniden başlatma bunları sıfırlar. Üretim başlangıcı açık korumalar içerir; MemoryStore istisnası gerçek bir üretim mimarisi sağlamaz. Çok sunucu, gerçek ödeme, hesap kurtarma ve canlı WhatsApp teslimatı bu sürümün kapsamı dışındadır.
 
 `aws/*.sh` dosyaları eksik mimari taslaklardır ve ilk adımda hata koduyla dururlar. Canlı kaynak oluşturulmadı; maliyet veya başarılı dağıtım garantisi verilmez. Ayrıntılar [AWS notundadır](aws_deployment_architecture.md).
+
+## Lisans
+
+Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır.
+Copyright (c) 2026 Baran Demir B.
+
+Üçüncü taraf bağımlılıklar kendi lisanslarına tabidir.

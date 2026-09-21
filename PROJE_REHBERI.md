@@ -431,11 +431,12 @@ Ek regresyonlar: `tests/hardening.test.js` eski bir gönderim geç tamamlandığ
 
 | Dosya | Neden var, kim kullanır, nasıl güncellenir? |
 | --- | --- |
-| `package.json` | npm komutları, Node24 aralığı, doğrudan uygulama/test bağımlılıkları ve Jest ayarları. start→server, dev→nodemon, test→mock/regresyonlar, test:mysql→izole MySQL, db:init→boş DB, check→statik/referans kontrolleri. |
+| `package.json` | npm komutları, Node24 aralığı, doğrudan uygulama/test bağımlılıkları ve Jest ayarları. `license: "MIT"` proje lisansının makine tarafından okunabilen tanımıdır; tam metin LICENSE dosyasındadır. start→server, dev→nodemon, test→mock/regresyonlar, test:mysql→izole MySQL, db:init→boş DB, check→statik/referans kontrolleri. |
 | `package-lock.json` | npm'in kilitlediği kesin sürümler ve integrity özetleri. Elle düzenleme; uyumlu npm güncellemesiyle üret, npm ci ve audit ile doğrula. Alt bağımlılık değişimi bu dosyada görünür. |
 | `.nvmrc` | nvm kullanılıyorsa Node24 seçimi. CI/engines ile birlikte güncellenir. |
 | `.env.example` | Kopyalanabilir, sır içermeyen yerel demo ayarları; izlenen dosyadır. Yeni ayar eklendiğinde runtime ve rehberle eşleştir. |
 | `.gitignore` | .env/sırlar, AWS anahtarları, node_modules, logs, coverage, IDE/OS ve geçici artefaktları dışlar. Geçmişte commit edilmiş bir sırrı sadece ignore ekleyerek geçmişten silmiş olmazsın. |
+| `LICENSE` | Standart İngilizce MIT lisans metni; telif satırı `Copyright (c) 2026 Baran Demir B.`. Projeyi kullanacak veya dağıtacak kişiler için izin ve koşulları belirtir. README buraya bağlanır; package.json ve package-lock.json içindeki kök proje lisans alanı MIT olarak eşleşir. Üçüncü taraf bağımlılıklar kendi lisanslarına tabidir. Çalıştırılabilir kod içermez. |
 | `README.md` | Kısa giriş, iki yerel kurulum, kontrol komutları ve bu rehbere bağlantı. Ayrıntılı kaynak açıklamasının yerine geçmez. |
 | `AGENTS.md` | Bu reponun ortak inceleme/onay/uygulama/dokümantasyon kuralları. Başlangıç notları tarihli envanterdir. Kullanıcının son açık Astra uygulama talimatı plan kaydındadır. |
 | `UYGULAMA_PLANI.md` | İnceleme commit'i, eski tekrar üretme kanıtları, kabul edilen kapsam, dışarıda kalan işler ve son teslim kaydı. Eski bulgular yeni davranış gibi okunmaz. |

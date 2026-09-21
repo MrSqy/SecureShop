@@ -1,6 +1,7 @@
 {
   "name": "ecommerce-secure",
   "version": "1.0.0",
+  "license": "MIT",
   "description": "Yerel MySQL veya a\u00e7\u0131k demo modu ile g\u00fcvenlik odakl\u0131 e-ticaret demosu",
   "main": "src/app.js",
   "scripts": {

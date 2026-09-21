@@ -8,6 +8,7 @@
 .gitignore
 .nvmrc
 AGENTS.md
+LICENSE
 PROJE_REHBERI.md
 README.md
 UYGULAMA_PLANI.md
